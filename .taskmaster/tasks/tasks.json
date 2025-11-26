@@ -16,13 +16,13 @@
         "id": 2,
         "title": "Implement Real-Time GPS Tracking with WebSocket",
         "description": "Develop the core functionality for GPS-based real-time tracking of school buses using WebSocket for real-time updates.",
-        "details": "- Integrate GPS APIs for location tracking.\n- Implement a service to fetch and update bus locations using WebSocket for real-time tracking.\n- Create a map interface to display live bus locations.\n<info added on 2025-11-26T06:31:52.662Z>\n### Implementation Notes\n- Use the `location-event` module and the `LocationEvent` table (fields: `busId`, `tripId`, `latitude`, `longitude`, `source`) to store GPS snapshots.\n- Create a service to receive data from devices (via REST or MQTT gateway), normalize it, and emit through NestJS `WebSocketGateway` (can be placed at `backend/src/modules/location-event/gateways`).\n- The frontend should subscribe to channels based on `busId`/`tripId`; it is advisable to cache the most recent location in Redis/Postgres for historical purposes.\n- Control the update frequency using throttling to prevent congestion (e.g., 1 update every 2 seconds per bus).\n</info added on 2025-11-26T06:31:52.662Z>",
-        "testStrategy": "Conduct unit tests on GPS data fetching; perform integration tests to ensure location updates reflect on the map correctly.",
-        "priority": "high",
+        "status": "pending",
         "dependencies": [
           1
         ],
-        "status": "pending",
+        "priority": "high",
+        "details": "- Integrate GPS APIs for location tracking.\n- Implement a service to fetch and update bus locations using WebSocket for real-time tracking.\n- Create a map interface to display live bus locations.\n<info added on 2025-11-26T06:31:52.662Z>\n### Implementation Notes\n- Use the `location-event` module and the `LocationEvent` table (fields: `busId`, `tripId`, `latitude`, `longitude`, `source`) to store GPS snapshots.\n- Create a service to receive data from devices (via REST or MQTT gateway), normalize it, and emit through NestJS `WebSocketGateway` (can be placed at `backend/src/modules/location-event/gateways`).\n- Frontend clients only need to subscribe to channels based on `busId`/`tripId`; persist the latest location directly in PostgreSQL (no Redis/cache layer) for history queries.\n- Control the update frequency using throttling to prevent congestion (e.g., 1 update every 2 seconds per bus).\n</info added on 2025-11-26T06:31:52.662Z>",
+        "testStrategy": "Conduct unit tests on GPS data fetching; perform integration tests to ensure location updates reflect on the map correctly.",
         "subtasks": [
           {
             "id": 1,
@@ -234,16 +234,16 @@
         ]
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Implement Security Measures with Enhanced Authentication",
         "description": "Establish security protocols to protect sensitive user data and ensure compliance with privacy regulations, enhancing authentication mechanisms.",
-        "details": "- Implement data encryption for transmission and storage.\n- Set up secure user authentication and access control mechanisms, including refresh token and password reset features.\n- Conduct regular security audits and vulnerability assessments.\n<info added on 2025-11-26T06:33:04.033Z>\n### Implementation Notes\n- Leverage existing guards (`jwt-auth.guard.ts`, `roles.guard.ts`) and extend the `auth` module to support refresh tokens (JWT + Redis or database table `RefreshToken`).\n- Password reset flow: create an endpoint to send email OTP using NotificationService or a standalone email service.\n- Encryption: use `bcrypt` for passwords, TLS for the API gateway, and consider Vault for storing secrets.\n- Security audit: integrate `helmet`, `rate-limiter`, and log audits into a separate table or SIEM service.\n</info added on 2025-11-26T06:33:04.033Z>",
-        "testStrategy": "Perform security testing to identify vulnerabilities; ensure compliance with privacy regulations through audits.",
-        "priority": "high",
+        "status": "pending",
         "dependencies": [
           1
         ],
-        "status": "pending",
+        "priority": "high",
+        "details": "- Implement data encryption for transmission and storage.\n- Set up secure user authentication and access control mechanisms, including refresh token and password reset features.\n- Conduct regular security audits and vulnerability assessments.\n<info added on 2025-11-26T06:33:04.033Z>\n### Implementation Notes\n- Leverage existing guards (`jwt-auth.guard.ts`, `roles.guard.ts`) and extend the `auth` module to support refresh tokens stored in PostgreSQL (create a `RefreshToken` table or reuse an auth-specific table).\n- Password reset flow: create an endpoint to send email OTP using NotificationService or a standalone email service.\n- Encryption: use `bcrypt` for passwords, TLS for the API gateway, and consider a simple secrets file (or Vault later) for credential storage.\n- Security audit: integrate `helmet`, `rate-limiter`, and log audits into a separate table or SIEM service.\n</info added on 2025-11-26T06:33:04.033Z>",
+        "testStrategy": "Perform security testing to identify vulnerabilities; ensure compliance with privacy regulations through audits.",
         "subtasks": [
           {
             "id": 1,
