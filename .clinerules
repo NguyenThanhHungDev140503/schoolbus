@@ -1,0 +1,239 @@
+# Cline Rules - School Bus Management System
+
+## Project Intelligence
+
+Tài liệu này ghi nhận các patterns, preferences và insights quan trọng về dự án.
+
+---
+
+## Code Conventions
+
+### Backend (NestJS)
+
+1. **Module Structure**
+   ```
+   module/
+   ├── module-name.controller.ts
+   ├── module-name.service.ts
+   ├── module-name.repository.ts
+   ├── module-name.module.ts
+   └── dto/
+       ├── create-module-name.dto.ts
+       ├── update-module-name.dto.ts
+       └── module-name-response.dto.ts
+   ```
+
+2. **Naming Conventions**
+   - Files: kebab-case (e.g., `user-role.enum.ts`)
+   - Classes: PascalCase (e.g., `UserService`)
+   - Variables/Functions: camelCase (e.g., `findById`)
+   - Constants: UPPER_SNAKE_CASE (e.g., `JWT_SECRET`)
+
+3. **Import Order**
+   ```typescript
+   // 1. NestJS/Third-party imports
+   import { Injectable } from '@nestjs/common';
+   
+   // 2. Local imports (absolute paths)
+   import { PrismaService } from '@/core/prisma/prisma.service';
+   
+   // 3. Relative imports
+   import { CreateUserDto } from './dto/create-user.dto';
+   ```
+
+### Frontend (React)
+
+1. **File Structure**
+   - Components: PascalCase (e.g., `MapComponent.js`)
+   - Utilities/API: camelCase (e.g., `getAllUsers.js`)
+   - Styles: kebab-case (e.g., `admin-dashboard.css`)
+
+2. **API Calls**
+   - Tất cả API calls đặt trong thư mục `src/api/`
+   - Sử dụng Axios instance từ `api.js`
+
+---
+
+## Database Patterns
+
+### Prisma Conventions
+
+1. **Model Naming**
+   - Models: PascalCase singular (e.g., `User`, `Bus`)
+   - Fields: camelCase (e.g., `fullName`, `licensePlate`)
+
+2. **Relations**
+   - 1:1 với `@unique` foreign key
+   - 1:N với array type
+   - N:M với junction table (e.g., `ParentStudent`)
+
+3. **Soft Delete vs Hard Delete**
+   - Hiện tại sử dụng hard delete
+   - Có thể thêm `deletedAt` field nếu cần soft delete
+
+---
+
+## Authentication Flow
+
+### JWT Strategy
+```
+1. User login với email/password
+2. Server verify và trả về JWT token
+3. Client gửi token trong Authorization header
+4. JwtAuthGuard verify token cho protected routes
+5. RolesGuard check user role
+```
+
+### Protected vs Public Routes
+```typescript
+// Public route
+@Public()
+@Post('login')
+login() {}
+
+// Protected route (any authenticated user)
+@UseGuards(JwtAuthGuard)
+@Get('profile')
+getProfile() {}
+
+// Protected + Role-based
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@Get('admin-only')
+adminOnly() {}
+```
+
+---
+
+## API Response Format
+
+### Success Response
+```typescript
+// Single item
+{
+  "id": 1,
+  "email": "user@example.com",
+  ...
+}
+
+// List
+{
+  "data": [...],
+  "meta": {
+    "total": 100,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 10
+  }
+}
+```
+
+### Error Response
+```typescript
+{
+  "statusCode": 400,
+  "message": "Error message",
+  "error": "Bad Request"
+}
+```
+
+---
+
+## Testing Guidelines
+
+### Unit Tests
+- Đặt cùng thư mục với file được test
+- Naming: `*.spec.ts`
+- Mock external dependencies (Prisma, etc.)
+
+### E2E Tests
+- Đặt trong thư mục `test/`
+- Naming: `*.e2e-spec.ts`
+- Use test database
+
+---
+
+## Common Commands
+
+### Backend
+```bash
+# Development
+yarn start:dev
+
+# Build
+yarn build
+
+# Database
+yarn prisma:migrate
+yarn prisma:generate
+yarn prisma:seed
+yarn db:setup
+
+# Testing
+yarn test
+yarn test:e2e
+yarn test:cov
+```
+
+### Frontend
+```bash
+# Development
+npm start
+
+# Build
+npm run build
+
+# Test
+npm test
+```
+
+---
+
+## Known Challenges
+
+1. **Location Tracking**
+   - Cần xử lý cao tần suất GPS updates
+   - Consider WebSocket cho real-time
+
+2. **Multi-role Users**
+   - User chỉ có 1 role trong thiết kế hiện tại
+   - Nếu cần multi-role, phải refactor schema
+
+3. **Timezone**
+   - Database lưu UTC
+   - Client convert sang local timezone
+
+---
+
+## Evolution Notes
+
+### 2025-11-26
+- Khởi tạo project với NestJS + React
+- Database schema thiết kế hoàn chỉnh
+- 16 feature modules được tạo
+- Memory Bank được khởi tạo
+
+---
+
+## User Preferences
+
+- **Ngôn ngữ báo cáo:** Tiếng Việt
+- **Code comments:** Tiếng Anh
+- **Commit messages:** Tiếng Anh
+- **Documentation:** Tiếng Việt
+
+---
+
+## Tool Usage
+
+### Recommended IDEs
+- VS Code với extensions:
+  - Prisma
+  - ESLint
+  - Prettier
+  - NestJS Snippets
+
+### Database Tools
+- pgAdmin hoặc DBeaver cho PostgreSQL
+- Prisma Studio (`npx prisma studio`)
+

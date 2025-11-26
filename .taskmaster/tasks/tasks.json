@@ -1,0 +1,507 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Complete Project Infrastructure",
+        "description": "Establish the foundational infrastructure for the Smart School Bus Tracking System, including repository setup, environment configuration, and initial project structure.",
+        "details": "- Create a Git repository for version control.\n- Set up a cloud-based server environment (e.g., AWS, Azure).\n- Initialize the mobile application projects for Android and iOS.\n- Set up a relational database (e.g., PostgreSQL) for user and tracking data.",
+        "testStrategy": "Verify repository setup by checking commit history; ensure cloud server is accessible; confirm mobile projects compile without errors.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement Real-Time GPS Tracking with WebSocket",
+        "description": "Develop the core functionality for GPS-based real-time tracking of school buses using WebSocket for real-time updates.",
+        "details": "- Integrate GPS APIs for location tracking.\n- Implement a service to fetch and update bus locations using WebSocket for real-time tracking.\n- Create a map interface to display live bus locations.\n<info added on 2025-11-26T06:31:52.662Z>\n### Implementation Notes\n- Use the `location-event` module and the `LocationEvent` table (fields: `busId`, `tripId`, `latitude`, `longitude`, `source`) to store GPS snapshots.\n- Create a service to receive data from devices (via REST or MQTT gateway), normalize it, and emit through NestJS `WebSocketGateway` (can be placed at `backend/src/modules/location-event/gateways`).\n- The frontend should subscribe to channels based on `busId`/`tripId`; it is advisable to cache the most recent location in Redis/Postgres for historical purposes.\n- Control the update frequency using throttling to prevent congestion (e.g., 1 update every 2 seconds per bus).\n</info added on 2025-11-26T06:31:52.662Z>",
+        "testStrategy": "Conduct unit tests on GPS data fetching; perform integration tests to ensure location updates reflect on the map correctly.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Integrate GPS APIs for Location Tracking",
+            "description": "Set up and integrate external GPS APIs to fetch real-time location data for school buses.",
+            "dependencies": [],
+            "details": "Research and select appropriate GPS APIs that provide real-time location data. Implement the API integration to fetch bus locations and handle the data format returned by the API. Ensure proper error handling for API requests and responses.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Implement WebSocket Service for Real-Time Updates",
+            "description": "Create a WebSocket service to handle real-time updates of bus locations based on GPS data.",
+            "dependencies": [
+              1
+            ],
+            "details": "Develop a WebSocket server that listens for incoming connections from clients. Implement functionality to send real-time updates of bus locations to connected clients whenever new data is received from the GPS API. Ensure that the service can handle multiple connections and maintain data consistency.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 3,
+            "title": "Create Map Interface for Live Bus Locations",
+            "description": "Design and implement a user interface that displays live bus locations on a map.",
+            "dependencies": [
+              2
+            ],
+            "details": "Utilize a mapping library (e.g., Google Maps API or Leaflet) to create a map interface. Integrate the WebSocket service to update the map in real-time as new bus location data is received. Focus on UI/UX design to ensure the map is user-friendly and visually appealing.",
+            "status": "pending",
+            "testStrategy": null
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Develop Parent Notification System with Push and Email",
+        "description": "Create an automated notification system for parents regarding bus pick-up and drop-off times, including push notifications and email alerts.",
+        "details": "- Implement a notification service using SMS, push notifications, and email.\n- Create templates for notifications (e.g., delays, pick-up confirmations).\n- Integrate with the backend to trigger notifications based on bus location data.\n<info added on 2025-11-26T06:32:09.534Z>\n### Implementation Notes\n- Utilize the existing `notification` module (controller/service/repository) and the `NotificationType` enum to classify alerts (e.g., `warning`, `delay`, `arrival`).\n- For push notifications, prioritize FCM; for emails, use SES/SendGrid; for SMS, implement Twilio (configuration within the service).\n- Trigger notifications based on trip/location events: use Domain Events or directly emit from `LocationEventService` to the NotificationService.\n- Log notifications in the `Notification` table to provide parents with a history in the app/web.\n</info added on 2025-11-26T06:32:09.534Z>",
+        "testStrategy": "Test notification delivery through unit tests; simulate various scenarios to ensure notifications are sent correctly.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Notification Service",
+            "description": "Implement the core notification service that supports SMS, push notifications, and email alerts.",
+            "dependencies": [],
+            "details": "Develop a notification service that can handle sending messages through SMS, push notifications, and email. Ensure that the service can manage different message formats and delivery methods effectively.",
+            "status": "pending",
+            "testStrategy": "Test the notification service by sending test messages through all channels and verifying delivery."
+          },
+          {
+            "id": 2,
+            "title": "Create Notification Templates",
+            "description": "Design and implement templates for various notification types such as delays and pick-up confirmations.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create user-friendly templates for notifications that will be sent to parents. These templates should cover scenarios like bus delays, pick-up confirmations, and other relevant alerts.",
+            "status": "pending",
+            "testStrategy": "Review the templates for clarity and effectiveness; conduct tests to ensure they render correctly in all notification formats."
+          },
+          {
+            "id": 3,
+            "title": "Integrate Backend for Notification Triggers",
+            "description": "Connect the notification service with the backend to trigger notifications based on real-time bus location data.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the integration between the notification service and the backend system. This will involve setting up triggers that activate notifications based on bus location updates and other relevant events.",
+            "status": "pending",
+            "testStrategy": "Simulate bus location updates and verify that notifications are triggered correctly in response to these updates."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Create Administrative Dashboard with API Integration",
+        "description": "Develop an administrative interface for managing the school bus system, including fleet management and route planning, with API integration.",
+        "details": "- Design the dashboard UI using a web framework (e.g., React, Angular).\n- Implement features for bus fleet management and route optimization.\n- Integrate reporting tools for data analysis with backend APIs.\n<info added on 2025-11-26T06:32:22.645Z>\n### Implementation Notes\n- The dashboard will retrieve data from the controllers: `bus`, `route`, `schedule`, and `admin`. Ensure each endpoint supports filtering and pagination (using DTO `paginated-query-*.dto.ts`).\n- Use Automapper for mapping entities to responses (already configured in the project); avoid returning Prisma models directly.\n- Fleet management will require endpoints to lock vehicles, update drivers, and view schedules (`Schedule` + `Trip`).\n- Reporting will aggregate data from `Trip`, `Attendance`, and `Notification`. Consider creating a service for aggregation or using SQL views.\n</info added on 2025-11-26T06:32:22.645Z>",
+        "testStrategy": "Perform integration testing to ensure all dashboard features work seamlessly; validate data accuracy in reports.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Dashboard UI",
+            "description": "Create a user-friendly interface for the administrative dashboard using a web framework.",
+            "dependencies": [],
+            "details": "Utilize React or Angular to design the dashboard UI, ensuring it is intuitive and responsive. Include components for fleet management and route planning.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Implement Fleet Management Features",
+            "description": "Develop features for managing the school bus fleet within the dashboard.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create functionalities to add, edit, and remove buses from the fleet. Include options for viewing bus details and status updates.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 3,
+            "title": "Integrate Reporting Tools with APIs",
+            "description": "Connect the dashboard to backend APIs for generating reports on bus operations.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement API calls to fetch data for reporting tools. Ensure that the data is accurately represented in the dashboard for analysis purposes.",
+            "status": "pending",
+            "testStrategy": null
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement Student Management Features with Business Logic",
+        "description": "Create functionalities for managing student information, attendance tracking, and secure check-in/check-out processes, focusing on business logic implementation.",
+        "details": "- Develop a student database schema to store student details and attendance records.\n- Implement secure check-in/check-out processes with guardian verification, ensuring business logic is correctly applied.\n<info added on 2025-11-26T06:32:39.374Z>\n### Implementation Notes\n- Related tables: `Student`, `ParentStudent`, `StudentSchedule`, `Attendance`. Use Prisma relations for eager loading when necessary (e.g., fetching parent information along with student data).\n- The check-in/out process should log `tripId`, `stopId`, and `action` (`picked_up`, `dropped_off`, `absent`) into the `Attendance` table.\n- Guardian verification: match `parentId` in `ParentStudent` and require OTP/QR for authentication.\n- Business logic should be consolidated in `student.service.ts` and reused through the existing repository pattern.\n</info added on 2025-11-26T06:32:39.374Z>",
+        "testStrategy": "Conduct unit tests on student management functionalities; perform integration tests with the driver app to ensure data sync.",
+        "priority": "medium",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Develop Student Database Schema",
+            "description": "Create a robust database schema to store student details and attendance records, ensuring data integrity and security.",
+            "dependencies": [],
+            "details": "Design the database schema using an appropriate relational database management system. Include tables for student information, attendance records, and relationships between them. Ensure that the schema supports efficient queries and maintains data integrity through constraints and relationships.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Design Secure Check-In/Check-Out Process",
+            "description": "Implement a secure check-in/check-out process that includes guardian verification to ensure safety and compliance.",
+            "dependencies": [],
+            "details": "Outline the workflow for the check-in/check-out process, including user interface design and backend logic. Implement guardian verification steps, ensuring that only authorized guardians can check in or out students. Use secure methods for data transmission and storage during this process.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 3,
+            "title": "Apply Business Logic for Student Management",
+            "description": "Integrate business logic into the student management features, ensuring proper validation and error handling.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Develop and implement the necessary business rules for managing student data, including validation checks for attendance records and check-in/check-out processes. Ensure that all business logic is well-documented and follows best practices for maintainability.",
+            "status": "pending",
+            "testStrategy": null
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Enhance Notification System with Multiple Channels",
+        "description": "Expand the notification system to include emergency alerts and two-way communication channels, implementing push notifications, email, and SMS.",
+        "details": "- Implement emergency alert features for immediate notifications to parents.\n- Create a two-way communication system for parents and drivers, utilizing push notifications, email, and SMS.\n<info added on 2025-11-26T06:32:51.387Z>\n### Implementation Notes\n- Emergency alerts should be sent directly through push/SMS with high priority, bypassing slow queues.\n- For two-way chat, create new tables (e.g., `Conversation` + `ConversationMessage`) or reuse `Notification` with a thread flag.\n- Implement middleware rate-limiting to prevent spam from parents; ensure complete logging in `Notification` or chat tables.\n- Define SLAs for each channel (push < 5s, SMS < 20s) and monitor using Prometheus/Grafana.\n</info added on 2025-11-26T06:32:51.387Z>",
+        "testStrategy": "Test the emergency alert system with simulated scenarios; gather feedback on the two-way communication feature from users.",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Emergency Alert Feature",
+            "description": "Develop and integrate the emergency alert feature to send immediate notifications to parents in case of emergencies.",
+            "dependencies": [],
+            "details": "This feature will utilize push notifications, SMS, and email to ensure parents receive alerts instantly. It will require setting up a notification service that can handle high-priority messages and ensure delivery across all channels.",
+            "status": "pending",
+            "testStrategy": "Simulate emergency scenarios to test the alert delivery and response times."
+          },
+          {
+            "id": 2,
+            "title": "Set Up Two-Way Communication System",
+            "description": "Create a two-way communication system that allows parents and drivers to communicate effectively using various channels.",
+            "dependencies": [],
+            "details": "This system will include features for parents to send messages to drivers and receive responses via push notifications, SMS, and email. It will require a user interface for parents and a backend service to manage the communication flow.",
+            "status": "pending",
+            "testStrategy": "Gather user feedback on the communication feature and test message delivery across all channels."
+          },
+          {
+            "id": 3,
+            "title": "Test Notification Channels",
+            "description": "Conduct comprehensive testing of all notification channels to ensure reliability and effectiveness of the system.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Testing will involve sending test notifications through push, SMS, and email to verify that all channels are functioning correctly and that messages are received in a timely manner.",
+            "status": "pending",
+            "testStrategy": "Perform unit tests and user acceptance testing to validate the notification delivery process."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Implement Security Measures with Enhanced Authentication",
+        "description": "Establish security protocols to protect sensitive user data and ensure compliance with privacy regulations, enhancing authentication mechanisms.",
+        "details": "- Implement data encryption for transmission and storage.\n- Set up secure user authentication and access control mechanisms, including refresh token and password reset features.\n- Conduct regular security audits and vulnerability assessments.\n<info added on 2025-11-26T06:33:04.033Z>\n### Implementation Notes\n- Leverage existing guards (`jwt-auth.guard.ts`, `roles.guard.ts`) and extend the `auth` module to support refresh tokens (JWT + Redis or database table `RefreshToken`).\n- Password reset flow: create an endpoint to send email OTP using NotificationService or a standalone email service.\n- Encryption: use `bcrypt` for passwords, TLS for the API gateway, and consider Vault for storing secrets.\n- Security audit: integrate `helmet`, `rate-limiter`, and log audits into a separate table or SIEM service.\n</info added on 2025-11-26T06:33:04.033Z>",
+        "testStrategy": "Perform security testing to identify vulnerabilities; ensure compliance with privacy regulations through audits.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Data Encryption for User Data",
+            "description": "Set up data encryption protocols for both transmission and storage of sensitive user data to enhance security measures.",
+            "dependencies": [],
+            "details": "Utilize encryption standards such as AES for data at rest and TLS for data in transit. Ensure that encryption keys are managed securely and comply with industry standards.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Set Up Secure User Authentication Mechanisms",
+            "description": "Establish secure authentication processes including refresh tokens, password resets, and access control mechanisms.",
+            "dependencies": [],
+            "details": "Implement OAuth 2.0 for secure authorization, create endpoints for password reset functionality, and ensure that refresh tokens are securely stored and managed.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 3,
+            "title": "Conduct Regular Security Audits and Assessments",
+            "description": "Perform regular security audits and vulnerability assessments to identify and mitigate potential security risks.",
+            "dependencies": [],
+            "details": "Schedule periodic security audits, utilize automated tools for vulnerability scanning, and ensure compliance with privacy regulations through thorough documentation and reporting.",
+            "status": "pending",
+            "testStrategy": null
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Deployment and Maintenance Planning",
+        "description": "Develop a deployment strategy and maintenance plan for the system post-launch.",
+        "details": "- Create a phased rollout plan for pilot testing in select schools.\n- Establish a maintenance schedule for regular updates and support.\n<info added on 2025-11-26T06:33:27.493Z>\n### Implementation Notes\n- Phased rollout: conduct pilot testing in 1-2 schools, utilizing feature flags to enable/disable modules such as notifications or tracking.\n- Maintenance: regularly execute `yarn prisma:migrate deploy`, perform daily database backups (pg_dump), and implement weekly log rotation.\n- Prepare a playbook for incident management (e.g., bus location not updating, notification failures).\n- Use docker-compose or Kubernetes manifests to describe the infrastructure prior to transitioning to the production environment.\n</info added on 2025-11-26T06:33:27.493Z>",
+        "testStrategy": "Review deployment plan with stakeholders; ensure all maintenance procedures are documented and understood by the support team.",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Phased Rollout Plan for Pilot Testing",
+            "description": "Develop a detailed phased rollout plan for pilot testing the system in select schools to ensure a smooth deployment process.",
+            "dependencies": [],
+            "details": "Identify target schools for pilot testing, outline the phases of the rollout, and establish timelines for each phase. Include criteria for evaluating the success of the pilot and feedback mechanisms from participating schools.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Establish Maintenance Schedule for Updates",
+            "description": "Create a comprehensive maintenance schedule that outlines regular updates and support for the system post-launch.",
+            "dependencies": [],
+            "details": "Define the frequency of updates, types of maintenance tasks required, and assign responsibilities for each task. Ensure that the schedule includes provisions for emergency maintenance and user support.",
+            "status": "pending",
+            "testStrategy": null
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Complete Frontend-Backend API Integration",
+        "description": "Integrate all frontend pages with backend APIs to ensure full functionality and data handling.",
+        "details": "Implement API calls for all CRUD operations across the admin, driver, and parent pages. Ensure proper error handling for API responses and implement loading states to enhance user experience. The integration should include: \n- Fetching data from the backend for displaying on frontend pages. \n- Sending user inputs from the frontend to the backend for processing. \n- Handling API errors gracefully and providing user feedback. \n- Implementing loading indicators during API calls to improve user experience.\n<info added on 2025-11-26T06:33:39.403Z>\n### Implementation Notes\n- The frontend currently uses an Axios instance (`frontend/src/api/api.js`). Create a service layer that matches the IDs of the backend modules (users, bus, route, etc.).\n- Ensure that all APIs returning a `PageableResponseDto` are correctly mapped to `data/meta` on the frontend.\n- For error handling, intercept Axios responses to catch 401/403 errors and automatically log out or refresh the token.\n- For loading indicators, consider using context/global reducer to toggle the spinner during API calls.\n</info added on 2025-11-26T06:33:39.403Z>",
+        "testStrategy": "Conduct unit tests for each API integration to ensure correct data handling. Perform integration tests to verify that the frontend correctly communicates with the backend. Simulate various scenarios, including successful and failed API calls, to ensure robust error handling and user feedback mechanisms.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          3
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement CRUD Operations for Admin Pages",
+            "description": "Develop API calls for all CRUD operations specifically for the admin pages, ensuring data is fetched and sent correctly.",
+            "dependencies": [],
+            "details": "Create functions to handle Create, Read, Update, and Delete operations for admin-related data. Ensure that the frontend can fetch data from the backend and send user inputs for processing.",
+            "status": "pending",
+            "testStrategy": "Conduct unit tests for each CRUD operation to ensure data is handled correctly."
+          },
+          {
+            "id": 2,
+            "title": "Implement CRUD Operations for Driver Pages",
+            "description": "Create API calls for CRUD operations on driver-related pages, ensuring seamless data interaction.",
+            "dependencies": [],
+            "details": "Develop functions to manage driver data through Create, Read, Update, and Delete operations. Ensure proper data fetching and submission from the frontend to the backend.",
+            "status": "pending",
+            "testStrategy": "Perform unit tests to verify that driver data is correctly managed through the API."
+          },
+          {
+            "id": 3,
+            "title": "Implement Error Handling and User Feedback",
+            "description": "Establish robust error handling mechanisms for API responses and provide user feedback on the frontend.",
+            "dependencies": [],
+            "details": "Create functions to handle API errors gracefully. Implement user notifications for success and error messages to enhance user experience during API interactions.",
+            "status": "pending",
+            "testStrategy": "Test error handling by simulating failed API calls and ensuring user feedback is displayed correctly."
+          },
+          {
+            "id": 4,
+            "title": "Implement Loading Indicators for API Calls",
+            "description": "Add loading indicators to the frontend during API calls to improve user experience and provide visual feedback.",
+            "dependencies": [],
+            "details": "Integrate loading states in the frontend to indicate when API calls are in progress. This will help users understand that their request is being processed.",
+            "status": "pending",
+            "testStrategy": "Verify that loading indicators appear during API calls and disappear once the response is received."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Complete Business Logic Implementation for All Modules",
+        "description": "Implement comprehensive business logic for all 16 modules in the backend services, ensuring validation, error handling, and business rules are fully integrated.",
+        "details": "Each module requires the implementation of specific business rules, validation checks, and error handling mechanisms. This includes defining the logic for data processing, ensuring that all inputs are validated against defined criteria, and handling any errors that may arise during processing. The implementation should follow best practices for code organization and documentation to facilitate future maintenance and updates.\n<info added on 2025-11-26T06:33:53.134Z>\n### Implementation Notes\n- Each of the 16 modules corresponds to 16 main tables in Prisma; ensure each module includes: DTO validation (using class-validator), a service for business logic processing, and a repository for Prisma interactions.\n- Prioritize implementation in clusters: (Users/Auth/Admin), (Route/StopPoint/Itinerary/Schedule), (Trip/Attendance/LocationEvent), (Notification/Parent modules).\n- Utilize Automapper to convert entities to response DTOs, preventing exposure of sensitive information.\n- Write unit tests concurrently (Task 11) to lock behavior when adding business rules.\n</info added on 2025-11-26T06:33:53.134Z>",
+        "testStrategy": "Conduct unit tests for each module's business logic to ensure that all validation rules are correctly enforced and that error handling works as intended. Perform integration tests to verify that the business logic interacts correctly with the existing API endpoints and that the overall system behaves as expected under various scenarios.",
+        "status": "pending",
+        "dependencies": [
+          5,
+          9
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Validation Checks for Module 1",
+            "description": "Develop and integrate validation checks for Module 1 to ensure all inputs meet defined criteria before processing.",
+            "dependencies": [],
+            "details": "Create a set of validation rules specific to Module 1, including data type checks, range validations, and mandatory field checks. Document the validation logic clearly for future reference.",
+            "status": "pending",
+            "testStrategy": "Conduct unit tests to verify that all validation rules are correctly enforced and that invalid inputs are appropriately rejected."
+          },
+          {
+            "id": 2,
+            "title": "Implement Error Handling for Module 1",
+            "description": "Establish robust error handling mechanisms for Module 1 to manage exceptions and provide user feedback.",
+            "dependencies": [
+              1
+            ],
+            "details": "Define error handling strategies for Module 1, including try-catch blocks and custom error messages. Ensure that errors are logged for debugging purposes and user-friendly messages are displayed.",
+            "status": "pending",
+            "testStrategy": "Perform integration tests to ensure that error handling works as intended during various failure scenarios."
+          },
+          {
+            "id": 3,
+            "title": "Define Business Rules for Module 1",
+            "description": "Outline and implement the specific business rules that govern the logic of Module 1.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Identify the key business rules for Module 1, including any calculations, conditions, and workflows that must be followed. Implement these rules in the codebase and ensure they are well-documented.",
+            "status": "pending",
+            "testStrategy": "Conduct unit tests to ensure that business rules are applied correctly and that the module behaves as expected under different conditions."
+          },
+          {
+            "id": 4,
+            "title": "Review and Document Module 1 Implementation",
+            "description": "Conduct a thorough review of the implementation for Module 1 and document the logic and processes used.",
+            "dependencies": [
+              3
+            ],
+            "details": "Review the code for Module 1 to ensure adherence to best practices and consistency. Create comprehensive documentation that outlines the validation checks, error handling, and business rules implemented.",
+            "status": "pending",
+            "testStrategy": "Have a peer review the documentation and implementation to ensure clarity and completeness."
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Implement Testing Suite for Backend and Frontend",
+        "description": "Create unit tests and end-to-end (E2E) tests for both backend and frontend components of the application.",
+        "details": "Develop a comprehensive testing suite that includes unit tests for critical business logic, authentication flows, and CRUD operations. Implement E2E tests to simulate user interactions and validate the entire application flow from frontend to backend. Ensure that all tests are documented and follow best practices for maintainability. Utilize testing frameworks such as Jest for frontend and Mocha/Chai for backend testing. Set up continuous integration to run tests automatically on code changes.\n<info added on 2025-11-26T06:34:03.886Z>\n### Implementation Notes\n- For backend unit tests, use `@nestjs/testing`, with Jest configuration already present in `package.json`; create `*.spec.ts` files alongside the service files.\n- For frontend tests, utilize React Testing Library with Jest (`npm test`). E2E tests can be conducted using Playwright or Cypress, or by integrating Supertest for API testing.\n- Set up a GitHub Actions workflow to run `yarn lint`, `yarn test`, `yarn test:e2e`, and build the frontend.\n- Prioritize testing for flows including login, bus management, tracking, and notifications.\n</info added on 2025-11-26T06:34:03.886Z>",
+        "testStrategy": "Conduct unit tests to verify the correctness of individual components and functions. Perform E2E tests to ensure that user flows work as expected across the application. Validate that all critical paths, including authentication and data manipulation, are covered by tests. Review test coverage reports to identify untested areas and improve coverage as necessary.",
+        "status": "pending",
+        "dependencies": [
+          10,
+          9
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Develop Unit Tests for Backend Components",
+            "description": "Create unit tests for critical business logic, authentication flows, and CRUD operations in the backend.",
+            "dependencies": [],
+            "details": "Utilize Mocha and Chai frameworks to write unit tests that cover all essential backend functionalities. Ensure that tests are well-documented and follow best practices for maintainability.",
+            "status": "pending",
+            "testStrategy": "Conduct unit tests to verify the correctness of individual backend components."
+          },
+          {
+            "id": 2,
+            "title": "Implement E2E Tests for Frontend and Backend",
+            "description": "Develop end-to-end tests to simulate user interactions and validate the application flow from frontend to backend.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use Jest for frontend E2E testing and integrate it with backend APIs to ensure that user flows work as expected. Document all test cases and maintain a clear structure for easy updates.",
+            "status": "pending",
+            "testStrategy": "Perform E2E tests to ensure that all critical paths, including authentication and data manipulation, are covered."
+          },
+          {
+            "id": 3,
+            "title": "Set Up Continuous Integration for Automated Testing",
+            "description": "Establish a continuous integration pipeline to run tests automatically on code changes.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Configure a CI tool (like Jenkins or GitHub Actions) to trigger tests on every code push. Ensure that both unit and E2E tests are included in the pipeline and that results are reported clearly.",
+            "status": "pending",
+            "testStrategy": "Validate the CI setup by pushing code changes and confirming that tests run automatically and report results."
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Create API Documentation with Swagger",
+        "description": "Develop comprehensive Swagger/OpenAPI documentation for all backend APIs.",
+        "details": "This task involves creating detailed API documentation using Swagger for all existing backend endpoints. The documentation should include descriptions of each endpoint, request and response schemas, authentication requirements, and examples of usage. Ensure that the documentation is clear, concise, and accessible for developers who will be integrating with the APIs. Utilize Swagger UI to present the documentation in an interactive format, allowing users to test endpoints directly from the documentation. Review existing API implementations to ensure all details are accurately captured.\n<info added on 2025-11-26T06:34:14.663Z>\n### Implementation Notes\n- Use `@nestjs/swagger` (already in devDependencies). The documentation will be generated in `main.ts` using `DocumentBuilder`, exposing the endpoint at `/api/docs`, protected by Basic Auth if necessary.\n- Group endpoints by module (Auth, Users, Bus, Route, Trip, Notification, etc.). Each DTO should include the `@ApiProperty` decorator to clearly display the schema.\n- Generate an OpenAPI JSON file to share with the mobile/web team using `SwaggerModule.createDocument`.\n- Ensure documentation is automatically updated in CI to prevent discrepancies with the code.\n</info added on 2025-11-26T06:34:14.663Z>",
+        "testStrategy": "Verify that the Swagger documentation accurately reflects the current API endpoints and their functionalities. Conduct a review with the development team to ensure all necessary information is included. Test the interactive features of the Swagger UI to confirm that users can successfully make requests and receive expected responses.",
+        "status": "pending",
+        "dependencies": [
+          9,
+          10
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Document Existing API Endpoints",
+            "description": "Create detailed documentation for all existing backend API endpoints using Swagger.",
+            "dependencies": [],
+            "details": "Gather information on each API endpoint, including descriptions, request and response schemas, authentication requirements, and usage examples. Use Swagger to format this information clearly and concisely.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Review API Documentation with Development Team",
+            "description": "Conduct a review session with the development team to validate the API documentation created.",
+            "dependencies": [
+              1
+            ],
+            "details": "Schedule a meeting with the development team to go through the Swagger documentation. Ensure that all details are accurate and that the documentation meets the needs of developers integrating with the APIs.",
+            "status": "pending",
+            "testStrategy": null
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-11-26T05:42:49.867Z",
+      "updated": "2025-11-26T05:50:14.443Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

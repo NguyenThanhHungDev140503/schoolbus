@@ -1,0 +1,147 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 4,
+        "title": "Create Administrative Dashboard with API Integration",
+        "description": "Develop an administrative interface for managing the school bus system, including fleet management and route planning, with API integration.",
+        "details": "- Design the dashboard UI using a web framework (e.g., React, Angular).\n- Implement features for bus fleet management and route optimization.\n- Integrate reporting tools for data analysis with backend APIs.\n<info added on 2025-11-26T06:32:22.645Z>\n### Implementation Notes\n- The dashboard will retrieve data from the controllers: `bus`, `route`, `schedule`, and `admin`. Ensure each endpoint supports filtering and pagination (using DTO `paginated-query-*.dto.ts`).\n- Use Automapper for mapping entities to responses (already configured in the project); avoid returning Prisma models directly.\n- Fleet management will require endpoints to lock vehicles, update drivers, and view schedules (`Schedule` + `Trip`).\n- Reporting will aggregate data from `Trip`, `Attendance`, and `Notification`. Consider creating a service for aggregation or using SQL views.\n</info added on 2025-11-26T06:32:22.645Z>",
+        "testStrategy": "Perform integration testing to ensure all dashboard features work seamlessly; validate data accuracy in reports.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Dashboard UI",
+            "description": "Create a user-friendly interface for the administrative dashboard using a web framework.",
+            "dependencies": [],
+            "details": "Utilize React or Angular to design the dashboard UI, ensuring it is intuitive and responsive. Include components for fleet management and route planning.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Implement Fleet Management Features",
+            "description": "Develop features for managing the school bus fleet within the dashboard.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create functionalities to add, edit, and remove buses from the fleet. Include options for viewing bus details and status updates.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 3,
+            "title": "Integrate Reporting Tools with APIs",
+            "description": "Connect the dashboard to backend APIs for generating reports on bus operations.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement API calls to fetch data for reporting tools. Ensure that the data is accurately represented in the dashboard for analysis purposes.",
+            "status": "pending",
+            "testStrategy": null
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Complete Frontend-Backend API Integration",
+        "description": "Integrate all frontend pages with backend APIs to ensure full functionality and data handling.",
+        "details": "Implement API calls for all CRUD operations across the admin, driver, and parent pages. Ensure proper error handling for API responses and implement loading states to enhance user experience. The integration should include: \n- Fetching data from the backend for displaying on frontend pages. \n- Sending user inputs from the frontend to the backend for processing. \n- Handling API errors gracefully and providing user feedback. \n- Implementing loading indicators during API calls to improve user experience.\n<info added on 2025-11-26T06:33:39.403Z>\n### Implementation Notes\n- The frontend currently uses an Axios instance (`frontend/src/api/api.js`). Create a service layer that matches the IDs of the backend modules (users, bus, route, etc.).\n- Ensure that all APIs returning a `PageableResponseDto` are correctly mapped to `data/meta` on the frontend.\n- For error handling, intercept Axios responses to catch 401/403 errors and automatically log out or refresh the token.\n- For loading indicators, consider using context/global reducer to toggle the spinner during API calls.\n</info added on 2025-11-26T06:33:39.403Z>",
+        "testStrategy": "Conduct unit tests for each API integration to ensure correct data handling. Perform integration tests to verify that the frontend correctly communicates with the backend. Simulate various scenarios, including successful and failed API calls, to ensure robust error handling and user feedback mechanisms.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          3
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement CRUD Operations for Admin Pages",
+            "description": "Develop API calls for all CRUD operations specifically for the admin pages, ensuring data is fetched and sent correctly.",
+            "dependencies": [],
+            "details": "Create functions to handle Create, Read, Update, and Delete operations for admin-related data. Ensure that the frontend can fetch data from the backend and send user inputs for processing.",
+            "status": "pending",
+            "testStrategy": "Conduct unit tests for each CRUD operation to ensure data is handled correctly."
+          },
+          {
+            "id": 2,
+            "title": "Implement CRUD Operations for Driver Pages",
+            "description": "Create API calls for CRUD operations on driver-related pages, ensuring seamless data interaction.",
+            "dependencies": [],
+            "details": "Develop functions to manage driver data through Create, Read, Update, and Delete operations. Ensure proper data fetching and submission from the frontend to the backend.",
+            "status": "pending",
+            "testStrategy": "Perform unit tests to verify that driver data is correctly managed through the API."
+          },
+          {
+            "id": 3,
+            "title": "Implement Error Handling and User Feedback",
+            "description": "Establish robust error handling mechanisms for API responses and provide user feedback on the frontend.",
+            "dependencies": [],
+            "details": "Create functions to handle API errors gracefully. Implement user notifications for success and error messages to enhance user experience during API interactions.",
+            "status": "pending",
+            "testStrategy": "Test error handling by simulating failed API calls and ensuring user feedback is displayed correctly."
+          },
+          {
+            "id": 4,
+            "title": "Implement Loading Indicators for API Calls",
+            "description": "Add loading indicators to the frontend during API calls to improve user experience and provide visual feedback.",
+            "dependencies": [],
+            "details": "Integrate loading states in the frontend to indicate when API calls are in progress. This will help users understand that their request is being processed.",
+            "status": "pending",
+            "testStrategy": "Verify that loading indicators appear during API calls and disappear once the response is received."
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Implement Testing Suite for Backend and Frontend",
+        "description": "Create unit tests and end-to-end (E2E) tests for both backend and frontend components of the application.",
+        "details": "Develop a comprehensive testing suite that includes unit tests for critical business logic, authentication flows, and CRUD operations. Implement E2E tests to simulate user interactions and validate the entire application flow from frontend to backend. Ensure that all tests are documented and follow best practices for maintainability. Utilize testing frameworks such as Jest for frontend and Mocha/Chai for backend testing. Set up continuous integration to run tests automatically on code changes.\n<info added on 2025-11-26T06:34:03.886Z>\n### Implementation Notes\n- For backend unit tests, use `@nestjs/testing`, with Jest configuration already present in `package.json`; create `*.spec.ts` files alongside the service files.\n- For frontend tests, utilize React Testing Library with Jest (`npm test`). E2E tests can be conducted using Playwright or Cypress, or by integrating Supertest for API testing.\n- Set up a GitHub Actions workflow to run `yarn lint`, `yarn test`, `yarn test:e2e`, and build the frontend.\n- Prioritize testing for flows including login, bus management, tracking, and notifications.\n</info added on 2025-11-26T06:34:03.886Z>",
+        "testStrategy": "Conduct unit tests to verify the correctness of individual components and functions. Perform E2E tests to ensure that user flows work as expected across the application. Validate that all critical paths, including authentication and data manipulation, are covered by tests. Review test coverage reports to identify untested areas and improve coverage as necessary.",
+        "status": "pending",
+        "dependencies": [
+          10,
+          9
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Develop Unit Tests for Backend Components",
+            "description": "Create unit tests for critical business logic, authentication flows, and CRUD operations in the backend.",
+            "dependencies": [],
+            "details": "Utilize Mocha and Chai frameworks to write unit tests that cover all essential backend functionalities. Ensure that tests are well-documented and follow best practices for maintainability.",
+            "status": "pending",
+            "testStrategy": "Conduct unit tests to verify the correctness of individual backend components."
+          },
+          {
+            "id": 2,
+            "title": "Implement E2E Tests for Frontend and Backend",
+            "description": "Develop end-to-end tests to simulate user interactions and validate the application flow from frontend to backend.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use Jest for frontend E2E testing and integrate it with backend APIs to ensure that user flows work as expected. Document all test cases and maintain a clear structure for easy updates.",
+            "status": "pending",
+            "testStrategy": "Perform E2E tests to ensure that all critical paths, including authentication and data manipulation, are covered."
+          },
+          {
+            "id": 3,
+            "title": "Set Up Continuous Integration for Automated Testing",
+            "description": "Establish a continuous integration pipeline to run tests automatically on code changes.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Configure a CI tool (like Jenkins or GitHub Actions) to trigger tests on every code push. Ensure that both unit and E2E tests are included in the pipeline and that results are reported clearly.",
+            "status": "pending",
+            "testStrategy": "Validate the CI setup by pushing code changes and confirming that tests run automatically and report results."
+          }
+        ]
+      }
+    ]
+  }
+}
