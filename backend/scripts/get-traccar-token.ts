@@ -1,9 +1,10 @@
+import 'dotenv/config';
 import axios from 'axios';
-import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
 
-// Load environment variables
+// Load environment variables from .env.development
 const envPath = path.join(__dirname, '../.env.development');
 dotenv.config({ path: envPath });
 
@@ -31,8 +32,7 @@ interface TraccarUser {
 }
 
 async function getTraccarToken(): Promise<string | null> {
-  const baseUrl =
-    process.env.TRACCAR_BASE_URL || 'https://demo.traccar.org';
+  const baseUrl = process.env.TRACCAR_BASE_URL || 'https://demo.traccar.org';
   const email = process.env.TRACCAR_USERNAME || process.env.TRACCAR_EMAIL;
   const password = process.env.TRACCAR_PASSWORD;
 
@@ -69,7 +69,9 @@ async function getTraccarToken(): Promise<string | null> {
     );
 
     console.log('✅ Session created successfully!');
-    console.log(`👤 User: ${sessionResponse.data.name} (${sessionResponse.data.email})`);
+    console.log(
+      `👤 User: ${sessionResponse.data.name} (${sessionResponse.data.email})`,
+    );
 
     // Step 2: Generate token (POST /api/session/token)
     // This endpoint requires authentication (cookie from session or BasicAuth)
@@ -108,7 +110,9 @@ async function getTraccarToken(): Promise<string | null> {
     if (shouldUpdate) {
       updateEnvFile(envPath, token);
     } else {
-      console.log('\n💡 Tip: Add --update or -u flag to automatically update .env.development');
+      console.log(
+        '\n💡 Tip: Add --update or -u flag to automatically update .env.development',
+      );
       console.log('   Example: yarn traccar:token --update');
     }
 
@@ -117,7 +121,9 @@ async function getTraccarToken(): Promise<string | null> {
     if (axios.isAxiosError(error)) {
       if (error.response) {
         console.error('❌ Error: Authentication failed');
-        console.error(`Status: ${error.response.status} ${error.response.statusText}`);
+        console.error(
+          `Status: ${error.response.status} ${error.response.statusText}`,
+        );
         console.error('Response:', error.response.data);
       } else if (error.request) {
         console.error('❌ Error: No response from server');
@@ -159,7 +165,9 @@ function updateEnvFile(envPath: string, token: string): void {
     console.log('📝 File updated successfully!');
   } catch (error) {
     console.error('❌ Error updating .env.development:', error);
-    console.error('Please manually add the token to your .env.development file:');
+    console.error(
+      'Please manually add the token to your .env.development file:',
+    );
     console.error(`TRACCAR_TOKEN=${token}`);
   }
 }
@@ -176,4 +184,3 @@ getTraccarToken()
     console.error('Fatal error:', error);
     process.exit(1);
   });
-
