@@ -19,10 +19,14 @@ export class QueryPositionDto {
   @IsString()
   to?: string;
 
-  @ApiProperty({ example: 1, required: false, description: 'Filter by position ID' })
+  @ApiProperty({ 
+    example: 1, 
+    required: false, 
+    description: 'Filter by position ID(s). Can pass multiple like id=31&id=42' 
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  id?: number;
+  id?: number | number[];
 }
 

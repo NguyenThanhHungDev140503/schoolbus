@@ -8,18 +8,38 @@ interface TraccarDevice {
   id: number;
   name: string;
   uniqueId: string;
+  status?: string;
+  disabled?: boolean;
+  lastUpdate?: string | null;
+  positionId?: number | null;
+  groupId?: number | null;
+  phone?: string | null;
+  model?: string | null;
+  contact?: string | null;
+  category?: string | null;
+  attributes?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
 interface TraccarPosition {
   id: number;
   deviceId: number;
+  protocol?: string;
+  deviceTime?: string;
+  fixTime?: string;
+  serverTime?: string;
+  outdated?: boolean;
+  valid?: boolean;
   latitude: number;
   longitude: number;
-  speed?: number;
+  altitude?: number;
+  speed?: number; // in knots (1 knot = 1.852 km/h)
   course?: number;
-  serverTime?: string;
-  fixTime?: string;
+  address?: string;
+  accuracy?: number;
+  network?: Record<string, unknown>;
+  geofenceIds?: number[];
+  attributes?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -125,14 +145,45 @@ export class TraccarService {
     deviceId?: number;
     from?: string;
     to?: string;
-    id?: number;
+    id?: number | number[]; // Support multiple IDs as per API docs: id=31&id=42
   }): Promise<TraccarPosition[]> {
     try {
       const baseConfig = this.buildRequestConfig();
+
+      // Build query params, handling array for id parameter
+      const queryParams: Record<string, unknown> = {};
+      if (params.deviceId !== undefined) {
+        queryParams.deviceId = params.deviceId;
+      }
+      if (params.from) {
+        queryParams.from = params.from;
+      }
+      if (params.to) {
+        queryParams.to = params.to;
+      }
+      if (params.id !== undefined) {
+        // Support both single ID and array of IDs
+        // Axios will serialize array as id=31&id=42
+        queryParams.id = Array.isArray(params.id) ? params.id : [params.id];
+      }
+
       const config: AxiosRequestConfig = {
         ...baseConfig,
-        params,
+        params: queryParams,
+        // Custom serializer to handle array params correctly: id=31&id=42
+        paramsSerializer: (params) => {
+          const parts: string[] = [];
+          for (const [key, value] of Object.entries(params)) {
+            if (Array.isArray(value)) {
+              value.forEach((v) => parts.push(`${key}=${encodeURIComponent(v)}`));
+            } else if (value !== undefined && value !== null) {
+              parts.push(`${key}=${encodeURIComponent(value)}`);
+            }
+          }
+          return parts.join('&');
+        },
       };
+
       const response$ = this.httpService.get<TraccarPosition[]>(
         '/api/positions',
         config,

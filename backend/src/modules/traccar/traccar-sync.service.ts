@@ -52,10 +52,26 @@ export class TraccarSyncService {
           continue;
         }
 
+        // Validate position data - only process valid positions
+        if (position.valid === false) {
+          this.logger.debug(
+            `Skipping invalid position for deviceId=${position.deviceId}`,
+          );
+          continue;
+        }
+
         const timestamp =
           (position.serverTime && new Date(position.serverTime)) ||
           (position.fixTime && new Date(position.fixTime)) ||
+          (position.deviceTime && new Date(position.deviceTime)) ||
           now;
+
+        // Convert speed from knots to km/h (Traccar API returns speed in knots)
+        // 1 knot = 1.852 km/h
+        const speedKph =
+          position.speed !== undefined && position.speed !== null
+            ? position.speed * 1.852
+            : undefined;
 
         await this.prisma.locationEvent.create({
           data: {
@@ -63,7 +79,7 @@ export class TraccarSyncService {
             timestamp,
             latitude: position.latitude,
             longitude: position.longitude,
-            speedKph: position.speed ?? undefined,
+            speedKph,
             heading: position.course ?? undefined,
             source: LocationSource.gateway,
           },
@@ -117,5 +133,3 @@ export class TraccarSyncService {
     });
   }
 }
-
-
