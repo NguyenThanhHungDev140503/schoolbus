@@ -87,6 +87,8 @@ model Bus {
   currentLat   Decimal?
   currentLng   Decimal?
   lastUpdated  DateTime?  @default(now())
+  /// Optional mapping to Traccar Device.id for GPS integration
+  traccarDeviceId Int?    @unique
   
   schedules       Schedule[]
   locationEvents  LocationEvent[]
@@ -245,6 +247,14 @@ enum TripStatus {
 enum LocationSource {
   device
   gateway
+}
+
+/// Generic key-value table for storing integration state, e.g. last Traccar sync time
+model IntegrationState {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
 }
 
 enum AttendanceAction {

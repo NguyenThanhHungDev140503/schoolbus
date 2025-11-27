@@ -30,7 +30,7 @@ GPS Device / Traccar Client
 ## 2. Mô hình map dữ liệu
 
 - **Traccar Device → Bus**
-  - `Device.id`        ↔  `bus.externalId` (hoặc `traccarDeviceId`)
+  - `Device.id`        ↔  `bus.traccarDeviceId`
   - `Device.name`      ↔  `bus.name` / `bus.licensePlate`
   - `Device.uniqueId`  ↔  mã phần cứng (IMEI) dùng để khớp thiết bị.
 

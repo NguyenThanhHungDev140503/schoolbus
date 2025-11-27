@@ -24,17 +24,21 @@ import { StudentScheduleModule } from './modules/student-schedule/student-schedu
 import { StudentModule } from './modules/student/student.module';
 import { TripModule } from './modules/trip/trip.module';
 import { UsersModule } from './modules/users/users.module';
+import { TraccarModule } from './modules/traccar/traccar.module';
+import { ScheduleModule as NestScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env.development', '.env'],
     }),
+    NestScheduleModule.forRoot(),
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
       signOptions: {
-        // @ts-ignore
+        // @ts-expect-error - JWT_EXPIRATION is a string
         expiresIn: (process.env.JWT_EXPIRATION as string) || '1d',
       },
     }),
@@ -56,6 +60,7 @@ import { UsersModule } from './modules/users/users.module';
     LocationEventModule,
     AttendanceModule,
     NotificationModule,
+    TraccarModule,
   ],
   controllers: [AppController],
   providers: [
@@ -70,4 +75,4 @@ import { UsersModule } from './modules/users/users.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

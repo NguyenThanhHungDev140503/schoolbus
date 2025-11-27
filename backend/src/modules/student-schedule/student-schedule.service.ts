@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { CreateStudentScheduleDto } from './dto/create-student-schedule.dto';
 import { PageableStudentScheduleResponseDto } from './dto/pageable-student-schedule-response.dto';
 import { PaginatedQueryStudentScheduleDto } from './dto/paginated-query-student-schedule.dto';
@@ -52,7 +51,9 @@ export class StudentScheduleService {
     const filter = this.buildFilter(query);
     const studentSchedules =
       await this.studentScheduleRepository.findByFilter(filter);
-    return studentSchedules.map(StudentScheduleResponseDto.fromStudentSchedule);
+    return studentSchedules.map((schedule) =>
+      StudentScheduleResponseDto.fromStudentSchedule(schedule),
+    );
   }
 
   async findAllWithPagination(
@@ -70,7 +71,9 @@ export class StudentScheduleService {
 
     return {
       ...result,
-      data: result.data.map(StudentScheduleResponseDto.fromStudentSchedule),
+      data: result.data.map((schedule) =>
+        StudentScheduleResponseDto.fromStudentSchedule(schedule),
+      ),
     };
   }
 
@@ -141,10 +144,8 @@ export class StudentScheduleService {
     await this.studentScheduleRepository.delete(id);
   }
 
-  private buildFilter(
-    query: QueryStudentScheduleDto,
-  ): Prisma.StudentScheduleWhereInput {
-    const filter: Prisma.StudentScheduleWhereInput = {};
+  private buildFilter(query: QueryStudentScheduleDto) {
+    const filter: Record<string, unknown> = {};
 
     if (query.studentId) {
       filter.studentId = query.studentId;
