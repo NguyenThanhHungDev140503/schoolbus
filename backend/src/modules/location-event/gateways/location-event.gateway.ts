@@ -35,7 +35,8 @@ type AuthenticatedSocket = Socket & {
   },
 })
 export class LocationEventGateway
-  implements OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -44,7 +45,7 @@ export class LocationEventGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   /**
    * Handle WebSocket connection with JWT authentication
@@ -106,9 +107,7 @@ export class LocationEventGateway
   handleDisconnect(client: Socket) {
     const user = (client as AuthenticatedSocket).user;
     if (user) {
-      this.logger.log(
-        `Client ${client.id} disconnected (userId: ${user.sub})`,
-      );
+      this.logger.log(`Client ${client.id} disconnected (userId: ${user.sub})`);
     } else {
       this.logger.log(`Client ${client.id} disconnected (unauthenticated)`);
     }
@@ -203,7 +202,9 @@ export class LocationEventGateway
   ) {
     const user = (client as AuthenticatedSocket).user;
     if (!user) {
-      this.logger.warn(`Client ${client.id} attempted unsubscribe without auth`);
+      this.logger.warn(
+        `Client ${client.id} attempted unsubscribe without auth`,
+      );
       return { error: 'Unauthorized' };
     }
 

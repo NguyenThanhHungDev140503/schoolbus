@@ -10,7 +10,7 @@ import { UpdateBusDto } from './dto/update-bus.dto';
 
 @Injectable()
 export class BusService {
-  constructor(private readonly busRepository: BusRepository) { }
+  constructor(private readonly busRepository: BusRepository) {}
 
   async create(createBusDto: CreateBusDto): Promise<BusResponseDto> {
     const bus = await this.busRepository.create({

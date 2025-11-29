@@ -14,7 +14,11 @@ const buildDefaultTimeRange = () => {
 const SWAGGER_DEFAULT_TIME_RANGE = buildDefaultTimeRange();
 
 export class QueryPositionDto {
-  @ApiProperty({ example: 1, required: false, description: 'Filter by device ID' })
+  @ApiProperty({
+    example: 1,
+    required: false,
+    description: 'Filter by device ID',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -38,14 +42,13 @@ export class QueryPositionDto {
   @IsString()
   to?: string;
 
-  @ApiProperty({ 
-    example: 1, 
-    required: false, 
-    description: 'Filter by position ID(s). Can pass multiple like id=31&id=42' 
+  @ApiProperty({
+    example: 1,
+    required: false,
+    description: 'Filter by position ID(s). Can pass multiple like id=31&id=42',
   })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   id?: number | number[];
 }
-

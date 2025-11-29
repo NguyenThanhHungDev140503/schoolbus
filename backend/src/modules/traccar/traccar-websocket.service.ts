@@ -11,6 +11,9 @@ import WebSocket, { RawData } from 'ws';
 
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { LocationSource } from '@prisma/client';
+import { LocationEventGateway } from '../location-event/gateways/location-event.gateway';
+import { LocationThrottleService } from '../location-event/location-throttle.service';
+import { LocationUpdateDto } from '../location-event/dto/location-update.dto';
 
 // Integration state keys
 const INTEGRATION_KEY_WS_LAST_MESSAGE = 'traccar:ws:lastMessage';
@@ -64,6 +67,8 @@ export class TraccarWebSocketService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly locationEventGateway: LocationEventGateway,
+    private readonly locationThrottleService: LocationThrottleService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -487,6 +492,36 @@ export class TraccarWebSocketService implements OnModuleInit, OnModuleDestroy {
           lastUpdated: timestamp,
         },
       });
+
+      // Emit realtime location update to subscribed clients via WebSocket gateway
+      // Use throttling to prevent overwhelming clients with too frequent updates
+      try {
+        if (this.locationThrottleService.shouldEmit(bus.id, timestamp)) {
+          // Build LocationUpdateDto payload
+          const locationUpdate: LocationUpdateDto = {
+            busId: bus.id,
+            tripId: null, // TODO: Map to active trip if available
+            latitude: position.latitude,
+            longitude: position.longitude,
+            speedKph: speedKph ?? null,
+            heading: position.course ?? null,
+            timestamp: timestamp.toISOString(),
+          };
+
+          // Emit to WebSocket gateway (will broadcast to subscribed clients)
+          this.locationEventGateway.emitLocationUpdate(
+            bus.id,
+            null, // tripId is null for now
+            locationUpdate,
+          );
+        }
+      } catch (error) {
+        // Log warning but don't throw to avoid crashing WebSocket processing
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Failed to emit location update for busId=${bus.id}: ${message}`,
+        );
+      }
 
       if (!latestTimestamp || timestamp > latestTimestamp) {
         latestTimestamp = timestamp;

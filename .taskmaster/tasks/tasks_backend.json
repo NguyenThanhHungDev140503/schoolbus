@@ -30,7 +30,7 @@
             "description": "Cài đặt @nestjs/websockets, @nestjs/platform-socket.io, socket.io và @types/socket.io để backend sẵn sàng triển khai realtime tracking.",
             "dependencies": [],
             "details": "- Chạy `yarn add @nestjs/websockets @nestjs/platform-socket.io socket.io`.\n- Chạy `yarn add -D @types/socket.io`.\n- Kiểm tra `package.json`/`yarn.lock` được cập nhật, đảm bảo NestJS có thể resolve `WebSocketGateway`.\n- Ghi chú vào docs về deps mới để đội DevOps biết khi deploy.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run `yarn start:dev` để chắc chắn dự án vẫn build sau khi thêm dependency mới."
           },
           {
@@ -46,13 +46,13 @@
           },
           {
             "id": 3,
-            "title": "Tích hợp TraccarSyncService với WebSocket",
-            "description": "Cập nhật `traccar-sync.service.ts` để inject gateway, phát sự kiện sau khi lưu LocationEvent và bảo đảm mỗi bus chỉ phát tối đa 1 bản tin/2 giây.",
+            "title": "Tích hợp Traccar WebSocket với LocationEventGateway",
+            "description": "Thiết kế luồng realtime từ Traccar WebSocket sang client, bảo đảm mỗi bus chỉ phát tối đa 1 bản tin/2 giây.",
             "dependencies": [
               2
             ],
-            "details": "- Inject `LocationEventGateway` (hoặc publisher service) vào `TraccarSyncService`.\n- Sau khi lưu LocationEvent và cập nhật bus, emit payload chuẩn `LocationUpdateDto` tới room tương ứng.\n- Nếu emit thất bại thì log cảnh báo, không stop cron.\n- Viết unit test/mocks đảm bảo cron không crash khi gateway lỗi.",
-            "status": "pending",
+            "details": "- `TraccarSyncService` chỉ chịu trách nhiệm `syncDevices` (mapping deviceId ↔ bus.traccarDeviceId), KHÔNG xử lý vị trí hay phát realtime.\n- Luồng realtime sẽ đi qua `TraccarWebSocketService`: kết nối WebSocket Traccar, nhận positions, map sang bus, lưu `LocationEvent` và cập nhật `bus.currentLat/currentLng/lastUpdated`.\n- Sau khi đã lưu xong, `TraccarWebSocketService` sẽ inject và dùng `LocationEventGateway` (hoặc publisher service) + `LocationThrottleService` để build `LocationUpdateDto` và emit tới các room `bus:{id}` / `trip:{id}`.\n- Nếu emit thất bại thì chỉ log cảnh báo, không làm crash service.\n- Viết unit test/mocks đảm bảo lỗi từ gateway/publisher không làm hỏng luồng xử lý WebSocket.",
+            "status": "done",
             "testStrategy": "Chạy cron sync (hoặc mock) và ngồi ở client WebSocket để kiểm tra nhận được dữ liệu realtime."
           },
           {
@@ -86,7 +86,7 @@
               2
             ],
             "details": "- DTO subscribe: yêu cầu `busId` hoặc `tripId`, validate mutual exclusivity.\n- DTO unsubscribe: tương tự subscribe.\n- DTO location update: bao gồm busId, lat, lng, speedKph, heading, timestamp.\n- Áp dụng `@ApiProperty` để swagger hiển thị schema và tái sử dụng cho gateway docs.\n- Viết test cho DTO (hoặc dùng class-validator test) để tránh payload sai.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Chạy unit test với class-validator để chắc chắn DTO báo lỗi khi thiếu busId/tripId hoặc truyền sai kiểu."
           }
         ]

@@ -15,7 +15,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let developerMessage = exception.message;
+    const developerMessage = exception.message;
     let userMessage = 'An unexpected error occurred';
 
     switch (exception.code) {

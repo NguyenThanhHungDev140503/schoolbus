@@ -3,6 +3,7 @@ import { LocationEventController } from './location-event.controller';
 import { LocationEventRepository } from './location-event.repository';
 import { LocationEventService } from './location-event.service';
 import { LocationEventGateway } from './gateways/location-event.gateway';
+import { LocationThrottleService } from './location-throttle.service';
 
 @Module({
   controllers: [LocationEventController],
@@ -10,7 +11,12 @@ import { LocationEventGateway } from './gateways/location-event.gateway';
     LocationEventService,
     LocationEventRepository,
     LocationEventGateway,
+    LocationThrottleService,
   ],
-  exports: [LocationEventService, LocationEventGateway],
+  exports: [
+    LocationEventService,
+    LocationEventGateway,
+    LocationThrottleService,
+  ],
 })
-export class LocationEventModule {}
+export class LocationEventModule { }
