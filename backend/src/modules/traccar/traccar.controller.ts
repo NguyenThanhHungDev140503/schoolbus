@@ -18,7 +18,7 @@ import { CreateDeviceDto } from './dto/create-device.dto';
 @Controller('traccar')
 @Roles(UserRole.admin)
 export class TraccarController {
-  constructor(private readonly traccarService: TraccarService) { }
+  constructor(private readonly traccarService: TraccarService) {}
 
   @Get('devices')
   @ApiOperation({ summary: 'Get all devices from Traccar' })

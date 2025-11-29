@@ -71,9 +71,9 @@ function calculateDistanceKm(a: SimulationPoint, b: SimulationPoint): number {
   const haversine =
     Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
     Math.sin(lngDelta / 2) *
-    Math.sin(lngDelta / 2) *
-    Math.cos(lat1) *
-    Math.cos(lat2);
+      Math.sin(lngDelta / 2) *
+      Math.cos(lat1) *
+      Math.cos(lat2);
   const c = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
   return EARTH_RADIUS_KM * c;
 }
@@ -134,7 +134,9 @@ function getDirectionForPoint(point: SimulationPoint): SimulationDirection {
   return distanceToA <= distanceToB ? 'A_TO_B' : 'B_TO_A';
 }
 
-function getTargetForDirection(direction: SimulationDirection): SimulationPoint {
+function getTargetForDirection(
+  direction: SimulationDirection,
+): SimulationPoint {
   return direction === 'A_TO_B' ? POINT_B : POINT_A;
 }
 
@@ -309,9 +311,7 @@ async function getTraccarDeviceUniqueId(
   }
 }
 
-async function getUniqueIdForBus(
-  bus: BusPosition,
-): Promise<string | null> {
+async function getUniqueIdForBus(bus: BusPosition): Promise<string | null> {
   if (bus.traccarDeviceId == null) {
     console.warn(
       `⚠️  Bus ${bus.licensePlate} (ID: ${bus.id}) does not have traccarDeviceId. Skipping.`,
@@ -346,8 +346,7 @@ async function sendBusPosition(
   const timestampISO = simulatedPosition.timestamp
     .toISOString()
     .replace(/\.\d{3}Z$/, 'Z'); // Format: 2025-01-15T10:30:45Z
-  const speedKnots =
-    Math.round((simulatedPosition.speedKph / 1.852) * 10) / 10; // Round to 1 decimal
+  const speedKnots = Math.round((simulatedPosition.speedKph / 1.852) * 10) / 10; // Round to 1 decimal
 
   // Get Traccar server URL and port from config
   const port = process.env.TRACCAR_POSITION_PORT
@@ -438,7 +437,9 @@ async function sendPositionsToTraccar(): Promise<void> {
     });
 
     if (buses.length === 0) {
-      console.log(`[${new Date().toISOString()}] No buses with Traccar device mapping and location data found`);
+      console.log(
+        `[${new Date().toISOString()}] No buses with Traccar device mapping and location data found`,
+      );
       return;
     }
 
@@ -472,7 +473,9 @@ async function sendPositionsToTraccar(): Promise<void> {
       // Log individual failures
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
-          console.error(`❌ Failed for bus ${buses[index].licensePlate} (ID: ${buses[index].id}): ${result.reason}`);
+          console.error(
+            `❌ Failed for bus ${buses[index].licensePlate} (ID: ${buses[index].id}): ${result.reason}`,
+          );
         }
       });
     }
@@ -489,7 +492,9 @@ export function startPositionSender(): void {
   const isEnabled = process.env.TRACCAR_POSITION_SENDER_ENABLED !== 'false';
 
   if (!isEnabled) {
-    console.log('⚠️  Traccar Position Sender is disabled via TRACCAR_POSITION_SENDER_ENABLED=false');
+    console.log(
+      '⚠️  Traccar Position Sender is disabled via TRACCAR_POSITION_SENDER_ENABLED=false',
+    );
     return;
   }
 
@@ -517,22 +522,21 @@ export function startPositionSender(): void {
 if (require.main === module) {
   startPositionSender();
 
-  // Keep the process alive
-  process.on('SIGINT', async () => {
-    console.log('\n🛑 Stopping Traccar Position Sender...');
-    await prisma.$disconnect();
-    process.exit(0);
-  });
+  const shutdown = (signal: NodeJS.Signals) => {
+    console.log(`\n🛑 Received ${signal}. Stopping Traccar Position Sender...`);
+    prisma
+      .$disconnect()
+      .catch((error) => {
+        console.error('Failed to disconnect Prisma cleanly:', error);
+      })
+      .finally(() => process.exit(0));
+  };
 
-  process.on('SIGTERM', async () => {
-    console.log('\n🛑 Stopping Traccar Position Sender...');
-    await prisma.$disconnect();
-    process.exit(0);
-  });
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (error) => {
     console.error('❌ Unhandled promise rejection:', error);
   });
 }
-
