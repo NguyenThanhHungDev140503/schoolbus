@@ -58,7 +58,8 @@
     "prisma": "^6.18.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@automapper/types": "^6.3.1",
@@ -80,6 +81,7 @@
     "@types/passport-local": "^1.0.38",
     "@types/socket.io": "^3.0.2",
     "@types/supertest": "^6.0.3",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
     "concurrently": "^9.2.1",

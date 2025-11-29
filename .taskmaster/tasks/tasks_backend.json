@@ -41,7 +41,7 @@
               1
             ],
             "details": "- Khởi tạo WebSocket gateway với namespace rõ ràng, bật CORS phù hợp.\n- Áp dụng JWT guard (hoặc middleware) để xác thực client.\n- Implement sự kiện `subscribe`/`unsubscribe` để socket join/leave room `bus:{id}` hoặc `trip:{id}`.\n- Xây helper emit cho các room trên, log khi có lỗi.\n- Đảm bảo gateway được export từ module để module khác inject được.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Dùng script `socket.io-client` đơn giản để kết nối, gửi subscribe và kiểm tra server phản hồi ACK."
           },
           {
@@ -390,6 +390,11 @@
           }
         ]
       }
-    ]
+    ],
+    "metadata": {
+      "created": "2025-11-29T04:49:43.424Z",
+      "updated": "2025-11-29T04:49:43.424Z",
+      "description": "Tasks for master context"
+    }
   }
 }
