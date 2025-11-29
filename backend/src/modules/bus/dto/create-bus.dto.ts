@@ -24,4 +24,12 @@ export class CreateBusDto {
   @IsNumber()
   @Type(() => Number)
   currentLng?: number;
+
+  @ApiPropertyOptional({
+    description: 'Traccar Device ID for GPS integration',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  traccarDeviceId?: number;
 }

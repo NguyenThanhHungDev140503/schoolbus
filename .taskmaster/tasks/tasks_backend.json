@@ -26,34 +26,68 @@
         "subtasks": [
           {
             "id": 1,
-            "title": "Integrate GPS APIs for Location Tracking",
-            "description": "Set up and integrate external GPS APIs to fetch real-time location data for school buses.",
+            "title": "Cài đặt WebSocket dependencies",
+            "description": "Cài đặt @nestjs/websockets, @nestjs/platform-socket.io, socket.io và @types/socket.io để backend sẵn sàng triển khai realtime tracking.",
             "dependencies": [],
-            "details": "Research and select appropriate GPS APIs that provide real-time location data. Implement the API integration to fetch bus locations and handle the data format returned by the API. Ensure proper error handling for API requests and responses.",
+            "details": "- Chạy `yarn add @nestjs/websockets @nestjs/platform-socket.io socket.io`.\n- Chạy `yarn add -D @types/socket.io`.\n- Kiểm tra `package.json`/`yarn.lock` được cập nhật, đảm bảo NestJS có thể resolve `WebSocketGateway`.\n- Ghi chú vào docs về deps mới để đội DevOps biết khi deploy.",
             "status": "pending",
-            "testStrategy": null
+            "testStrategy": "Run `yarn start:dev` để chắc chắn dự án vẫn build sau khi thêm dependency mới."
           },
           {
             "id": 2,
-            "title": "Implement WebSocket Service for Real-Time Updates",
-            "description": "Create a WebSocket service to handle real-time updates of bus locations based on GPS data.",
+            "title": "Tạo LocationEventGateway",
+            "description": "Tạo `backend/src/modules/location-event/gateways/location-event.gateway.ts` để lắng nghe kết nối, cho phép subscribe/unsubscribe theo busId/tripId và emit dữ liệu realtime.",
             "dependencies": [
               1
             ],
-            "details": "Develop a WebSocket server that listens for incoming connections from clients. Implement functionality to send real-time updates of bus locations to connected clients whenever new data is received from the GPS API. Ensure that the service can handle multiple connections and maintain data consistency.",
+            "details": "- Khởi tạo WebSocket gateway với namespace rõ ràng, bật CORS phù hợp.\n- Áp dụng JWT guard (hoặc middleware) để xác thực client.\n- Implement sự kiện `subscribe`/`unsubscribe` để socket join/leave room `bus:{id}` hoặc `trip:{id}`.\n- Xây helper emit cho các room trên, log khi có lỗi.\n- Đảm bảo gateway được export từ module để module khác inject được.",
             "status": "pending",
-            "testStrategy": null
+            "testStrategy": "Dùng script `socket.io-client` đơn giản để kết nối, gửi subscribe và kiểm tra server phản hồi ACK."
           },
           {
             "id": 3,
-            "title": "Create Map Interface for Live Bus Locations",
-            "description": "Design and implement a user interface that displays live bus locations on a map.",
+            "title": "Tích hợp TraccarSyncService với WebSocket",
+            "description": "Cập nhật `traccar-sync.service.ts` để inject gateway, phát sự kiện sau khi lưu LocationEvent và bảo đảm mỗi bus chỉ phát tối đa 1 bản tin/2 giây.",
             "dependencies": [
               2
             ],
-            "details": "Utilize a mapping library (e.g., Google Maps API or Leaflet) to create a map interface. Integrate the WebSocket service to update the map in real-time as new bus location data is received. Focus on UI/UX design to ensure the map is user-friendly and visually appealing.",
+            "details": "- Inject `LocationEventGateway` (hoặc publisher service) vào `TraccarSyncService`.\n- Sau khi lưu LocationEvent và cập nhật bus, emit payload chuẩn `LocationUpdateDto` tới room tương ứng.\n- Nếu emit thất bại thì log cảnh báo, không stop cron.\n- Viết unit test/mocks đảm bảo cron không crash khi gateway lỗi.",
             "status": "pending",
-            "testStrategy": null
+            "testStrategy": "Chạy cron sync (hoặc mock) và ngồi ở client WebSocket để kiểm tra nhận được dữ liệu realtime."
+          },
+          {
+            "id": 4,
+            "title": "Tạo throttling service cho realtime updates",
+            "description": "Xây service quản lý rate limiting theo busId để đảm bảo mỗi bus chỉ emit sau ít nhất 2s kể từ lần trước.",
+            "dependencies": [
+              2
+            ],
+            "details": "- Tạo service (ví dụ `LocationThrottleService`) lưu `lastEmitAt` trong memory.\n- API: `shouldEmit(busId: number, timestamp: Date): boolean`.\n- Có thể cấu hình khoảng thời gian qua env (mặc định 2s).\n- Log số lần bị throttle để theo dõi hiệu năng.\n- Viết unit test cho logic throttling.",
+            "status": "pending",
+            "testStrategy": "Chạy unit test với nhiều trường hợp (emit lần đầu, emit liên tục, vượt ngưỡng thời gian) để đảm bảo đúng hành vi."
+          },
+          {
+            "id": 5,
+            "title": "Cập nhật LocationEventModule",
+            "description": "Bổ sung gateway/throttle service vào `LocationEventModule`, cấu hình provider/export để module khác (như Traccar) dùng được.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "- Import HttpModule/ConfigModule nếu gateway cần.\n- Đăng ký `LocationEventGateway`, `LocationThrottleService`, các DTO providers cần thiết.\n- Export gateway/publisher services để `TraccarModule` inject.\n- Đảm bảo module không circular dependency (tách `RealtimeModule` nếu cần).",
+            "status": "pending",
+            "testStrategy": "Run `yarn start:dev` để đảm bảo module graph không lỗi và gateway được khởi động khi app chạy."
+          },
+          {
+            "id": 6,
+            "title": "Tạo DTOs cho WebSocket messages",
+            "description": "Định nghĩa các DTO phục vụ websocket events (SubscribeLocationDto, UnsubscribeLocationDto, LocationUpdateDto…) cùng validate bằng class-validator.",
+            "dependencies": [
+              2
+            ],
+            "details": "- DTO subscribe: yêu cầu `busId` hoặc `tripId`, validate mutual exclusivity.\n- DTO unsubscribe: tương tự subscribe.\n- DTO location update: bao gồm busId, lat, lng, speedKph, heading, timestamp.\n- Áp dụng `@ApiProperty` để swagger hiển thị schema và tái sử dụng cho gateway docs.\n- Viết test cho DTO (hoặc dùng class-validator test) để tránh payload sai.",
+            "status": "pending",
+            "testStrategy": "Chạy unit test với class-validator để chắc chắn DTO báo lỗi khi thiếu busId/tripId hoặc truyền sai kiểu."
           }
         ]
       },

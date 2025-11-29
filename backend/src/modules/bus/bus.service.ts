@@ -10,7 +10,7 @@ import { UpdateBusDto } from './dto/update-bus.dto';
 
 @Injectable()
 export class BusService {
-  constructor(private readonly busRepository: BusRepository) {}
+  constructor(private readonly busRepository: BusRepository) { }
 
   async create(createBusDto: CreateBusDto): Promise<BusResponseDto> {
     const bus = await this.busRepository.create({
@@ -18,6 +18,7 @@ export class BusService {
       capacity: createBusDto.capacity,
       currentLat: createBusDto.currentLat,
       currentLng: createBusDto.currentLng,
+      traccarDeviceId: createBusDto.traccarDeviceId,
     });
     return BusResponseDto.fromBus(bus);
   }
@@ -68,6 +69,7 @@ export class BusService {
       capacity: updateBusDto.capacity,
       currentLat: updateBusDto.currentLat,
       currentLng: updateBusDto.currentLng,
+      traccarDeviceId: updateBusDto.traccarDeviceId,
     });
     return BusResponseDto.fromBus(updatedBus);
   }

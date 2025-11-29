@@ -255,6 +255,8 @@ model IntegrationState {
   key       String   @unique
   value     Json
   updatedAt DateTime @updatedAt
+
+  @@map("IntegrationState")
 }
 
 enum AttendanceAction {

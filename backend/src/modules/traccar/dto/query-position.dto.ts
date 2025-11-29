@@ -2,6 +2,17 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsInt, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
+const buildDefaultTimeRange = () => {
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  return {
+    from: oneHourAgo.toISOString(),
+    to: now.toISOString(),
+  };
+};
+
+const SWAGGER_DEFAULT_TIME_RANGE = buildDefaultTimeRange();
+
 export class QueryPositionDto {
   @ApiProperty({ example: 1, required: false, description: 'Filter by device ID' })
   @IsOptional()
@@ -9,12 +20,20 @@ export class QueryPositionDto {
   @IsInt()
   deviceId?: number;
 
-  @ApiProperty({ example: '2024-01-01T00:00:00Z', required: false, description: 'Start time (ISO 8601)' })
+  @ApiProperty({
+    required: false,
+    description: 'Start time (ISO 8601)',
+    example: SWAGGER_DEFAULT_TIME_RANGE.from,
+  })
   @IsOptional()
   @IsString()
   from?: string;
 
-  @ApiProperty({ example: '2024-01-01T23:59:59Z', required: false, description: 'End time (ISO 8601)' })
+  @ApiProperty({
+    required: false,
+    description: 'End time (ISO 8601)',
+    example: SWAGGER_DEFAULT_TIME_RANGE.to,
+  })
   @IsOptional()
   @IsString()
   to?: string;

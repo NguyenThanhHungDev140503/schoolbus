@@ -26,34 +26,79 @@
         "subtasks": [
           {
             "id": 1,
-            "title": "Integrate GPS APIs for Location Tracking",
-            "description": "Set up and integrate external GPS APIs to fetch real-time location data for school buses.",
-            "dependencies": [],
-            "details": "Research and select appropriate GPS APIs that provide real-time location data. Implement the API integration to fetch bus locations and handle the data format returned by the API. Ensure proper error handling for API requests and responses.",
+            "title": "Cài đặt WebSocket dependencies",
+            "description": "Cài đặt @nestjs/websockets, @nestjs/platform-socket.io, socket.io và @types/socket.io để backend sẵn sàng triển khai realtime tracking.",
+            "details": "- Chạy `yarn add @nestjs/websockets @nestjs/platform-socket.io socket.io`.\n- Chạy `yarn add -D @types/socket.io`.\n- Kiểm tra `package.json`/`yarn.lock` được cập nhật, đảm bảo NestJS có thể resolve `WebSocketGateway`.\n- Ghi chú vào docs về deps mới để đội DevOps biết khi deploy.",
             "status": "pending",
-            "testStrategy": null
+            "dependencies": [],
+            "parentTaskId": 2
           },
           {
             "id": 2,
-            "title": "Implement WebSocket Service for Real-Time Updates",
-            "description": "Create a WebSocket service to handle real-time updates of bus locations based on GPS data.",
+            "title": "Tạo LocationEventGateway",
+            "description": "Tạo `backend/src/modules/location-event/gateways/location-event.gateway.ts` để lắng nghe kết nối, cho phép subscribe/unsubscribe theo busId/tripId và emit dữ liệu realtime.",
+            "details": "- Khởi tạo WebSocket gateway với namespace rõ ràng, bật CORS phù hợp.\n- Áp dụng JWT guard (hoặc middleware) để xác thực client.\n- Implement sự kiện `subscribe`/`unsubscribe` để socket join/leave room `bus:{id}` hoặc `trip:{id}`.\n- Xây helper emit cho các room trên, log khi có lỗi.\n- Đảm bảo gateway được export từ module để module khác inject được.",
+            "status": "pending",
             "dependencies": [
               1
             ],
-            "details": "Develop a WebSocket server that listens for incoming connections from clients. Implement functionality to send real-time updates of bus locations to connected clients whenever new data is received from the GPS API. Ensure that the service can handle multiple connections and maintain data consistency.",
-            "status": "pending",
-            "testStrategy": null
+            "parentTaskId": 2
           },
           {
             "id": 3,
-            "title": "Create Map Interface for Live Bus Locations",
-            "description": "Design and implement a user interface that displays live bus locations on a map.",
+            "title": "Tích hợp TraccarSyncService với WebSocket",
+            "description": "Cập nhật `traccar-sync.service.ts` để inject gateway, phát sự kiện sau khi lưu LocationEvent và bảo đảm mỗi bus chỉ phát tối đa 1 bản tin/2 giây.",
+            "details": "- Inject `LocationEventGateway` (hoặc publisher service) vào `TraccarSyncService`.\n- Sau khi lưu LocationEvent và cập nhật bus, emit payload chuẩn `LocationUpdateDto` tới room tương ứng.\n- Nếu emit thất bại thì log cảnh báo, không stop cron.\n- Viết unit test/mocks đảm bảo cron không crash khi gateway lỗi.",
+            "status": "pending",
             "dependencies": [
               2
             ],
-            "details": "Utilize a mapping library (e.g., Google Maps API or Leaflet) to create a map interface. Integrate the WebSocket service to update the map in real-time as new bus location data is received. Focus on UI/UX design to ensure the map is user-friendly and visually appealing.",
+            "parentTaskId": 2
+          },
+          {
+            "id": 4,
+            "title": "Tạo throttling service cho realtime updates",
+            "description": "Xây service quản lý rate limiting theo busId để đảm bảo mỗi bus chỉ emit sau ít nhất 2s kể từ lần trước.",
+            "details": "- Tạo service (ví dụ `LocationThrottleService`) lưu `lastEmitAt` trong memory.\n- API: `shouldEmit(busId: number, timestamp: Date): boolean`.\n- Có thể cấu hình khoảng thời gian qua env (mặc định 2s).\n- Log số lần bị throttle để theo dõi hiệu năng.\n- Viết unit test cho logic throttling.",
             "status": "pending",
-            "testStrategy": null
+            "dependencies": [
+              2
+            ],
+            "parentTaskId": 2
+          },
+          {
+            "id": 5,
+            "title": "Cập nhật LocationEventModule",
+            "description": "Bổ sung gateway/throttle service vào `LocationEventModule`, cấu hình provider/export để module khác (như Traccar) dùng được.",
+            "details": "- Import HttpModule/ConfigModule nếu gateway cần.\n- Đăng ký `LocationEventGateway`, `LocationThrottleService`, các DTO providers cần thiết.\n- Export gateway/publisher services để `TraccarModule` inject.\n- Đảm bảo module không circular dependency (tách `RealtimeModule` nếu cần).",
+            "status": "pending",
+            "dependencies": [
+              2,
+              4
+            ],
+            "parentTaskId": 2
+          },
+          {
+            "id": 6,
+            "title": "Tạo DTOs cho WebSocket messages",
+            "description": "Định nghĩa các DTO phục vụ websocket events (SubscribeLocationDto, UnsubscribeLocationDto, LocationUpdateDto…) cùng validate bằng class-validator.",
+            "details": "- DTO subscribe: yêu cầu `busId` hoặc `tripId`, validate mutual exclusivity.\n- DTO unsubscribe: tương tự subscribe.\n- DTO location update: bao gồm busId, lat, lng, speedKph, heading, timestamp.\n- Áp dụng `@ApiProperty` để swagger hiển thị schema và tái sử dụng cho gateway docs.\n- Viết test cho DTO (hoặc dùng class-validator test) để tránh payload sai.",
+            "status": "pending",
+            "dependencies": [
+              2
+            ],
+            "parentTaskId": 2
+          },
+          {
+            "id": 7,
+            "title": "Triển khai LocationEventProcessorService để xử lý business rules",
+            "description": "Tạo service mới để xử lý các business rules sau khi LocationEvent được tạo: kiểm tra trip start/end, geofence, overspeed và tự động cập nhật trip.status hoặc tạo notification.",
+            "details": "- Tạo `LocationEventProcessorService` trong module `location-event` hoặc `traccar`\n- Implement các method:\n  * `checkTripStartEnd()`: Kiểm tra nếu bus gần điểm bắt đầu/kết thúc của trip và tự động cập nhật `trip.currentStatus` (pending → in_progress, in_progress → completed)\n  * `checkGeofence()`: Xử lý `geofenceIds` từ Traccar position, tạo notification khi vào/ra geofence\n  * `checkOverspeed()`: So sánh `speedKph` với speed limit của route/bus, tạo notification warning nếu vượt quá\n- Inject `TripService` và `NotificationService` để cập nhật trip status và tạo notification\n- Tích hợp vào `TraccarSyncService` sau khi tạo LocationEvent\n- Xử lý lỗi gracefully: nếu processor fail thì log warning nhưng không stop cron sync\n<info added on 2025-11-27T12:10:02.480Z>\n**Bước 1: Tạo LocationEventProcessorService**\n- Tạo file `backend/src/modules/location-event/location-event-processor.service.ts`\n- Inject PrismaService, TripService, NotificationService, StopPointService (để tính khoảng cách)\n- Tạo method chính `processLocationEvent(locationEvent: LocationEvent): Promise<void>`\n- Xử lý lỗi: wrap trong try-catch, log warning nếu fail nhưng không throw để không ảnh hưởng cron sync\n\n**Bước 2: Implement checkTripStartEnd()**\n- Tìm trip đang active cho bus (trip.currentStatus = 'pending' hoặc 'in_progress', trip.tripDate = hôm nay)\n- Lấy schedule của trip → route → itinerary → stop points\n- Tính khoảng cách từ locationEvent đến điểm bắt đầu (stop đầu tiên) và điểm kết thúc (stop cuối cùng)\n- Nếu khoảng cách < 100m:\n  * Nếu trip.status = 'pending' và gần điểm bắt đầu → cập nhật trip.currentStatus = 'in_progress', actualStartTime = now\n  * Nếu trip.status = 'in_progress' và gần điểm kết thúc → cập nhật trip.currentStatus = 'completed', actualEndTime = now\n- Sử dụng công thức Haversine để tính khoảng cách giữa 2 điểm GPS\n\n**Bước 3: Implement checkGeofence()**\n- Kiểm tra nếu TraccarPosition có geofenceIds (từ Traccar API response)\n- Lưu geofenceIds vào LocationEvent (có thể thêm field mới vào schema hoặc lưu trong attributes JSON)\n- Khi geofenceIds thay đổi so với locationEvent trước đó:\n  * Tạo notification type = 'warning' cho tất cả parents có students trong trip\n  * Nội dung: \"Xe buýt đã vào/ra khu vực [geofence name]\"\n- Cần map geofenceIds từ Traccar sang tên geofence trong hệ thống (có thể lưu mapping trong IntegrationState hoặc tạo bảng Geofence)\n\n**Bước 4: Implement checkOverspeed()**\n- Lấy speed limit từ Route (cần thêm field speedLimitKph vào Route schema) hoặc Bus\n- So sánh locationEvent.speedKph với speed limit\n- Nếu speedKph > speedLimit * 1.1 (vượt 10%):\n  * Tạo notification type = 'warning' cho tất cả parents có students trong trip\n  * Nội dung: \"Xe buýt đang di chuyển với tốc độ [speedKph] km/h, vượt quá giới hạn [speedLimit] km/h\"\n- Chỉ tạo notification mỗi 5 phút một lần cho cùng một bus (tránh spam)\n\n**Bước 5: Tích hợp vào TraccarSyncService**\n- Inject LocationEventProcessorService vào TraccarSyncService\n- Sau khi tạo LocationEvent thành công (sau dòng `await this.prisma.locationEvent.create(...)`), gọi:\n  ```typescript\n  await this.locationEventProcessorService.processLocationEvent(locationEvent).catch(err => {\n    this.logger.warn(`Failed to process location event ${locationEvent.id}:`, err);\n  });\n  ```\n- Đảm bảo lỗi từ processor không làm dừng cron sync\n\n**Bước 6: Cập nhật schema nếu cần**\n- Thêm field `speedLimitKph` vào Route model (nếu chưa có)\n- Có thể thêm field `geofenceIds` vào LocationEvent hoặc lưu trong attributes JSON\n- Tạo migration: `yarn prisma migrate dev --name add_speed_limit_to_route`\n\n**Bước 7: Unit tests**\n- Test checkTripStartEnd với các scenarios: pending → in_progress, in_progress → completed, không đủ gần điểm\n- Test checkGeofence với geofenceIds thay đổi\n- Test checkOverspeed với các mức speed khác nhau\n- Mock các dependencies (TripService, NotificationService) để test độc lập\n</info added on 2025-11-27T12:10:02.480Z>",
+            "status": "pending",
+            "dependencies": [
+              3
+            ],
+            "parentTaskId": 2
           }
         ]
       },
@@ -234,7 +279,7 @@
         ]
       },
       {
-        "id": "7",
+        "id": 7,
         "title": "Implement Security Measures with Enhanced Authentication",
         "description": "Establish security protocols to protect sensitive user data and ensure compliance with privacy regulations, enhancing authentication mechanisms.",
         "status": "pending",

@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosRequestConfig } from 'axios';
 import { firstValueFrom } from 'rxjs';
@@ -167,6 +167,20 @@ export class TraccarService {
         queryParams.id = Array.isArray(params.id) ? params.id : [params.id];
       }
 
+      // If only deviceId is provided without time range, set default range to last 7 days
+      // This ensures we get positions even if device was recently online
+      if (params.deviceId !== undefined && !params.from && !params.to) {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const fromISO = sevenDaysAgo.toISOString();
+        const toISO = now.toISOString();
+        queryParams.from = fromISO;
+        queryParams.to = toISO;
+        this.logger.debug(
+          `No time range provided for deviceId=${params.deviceId}, using default range: ${fromISO} to ${toISO}`,
+        );
+      }
+
       const config: AxiosRequestConfig = {
         ...baseConfig,
         params: queryParams,
@@ -175,24 +189,89 @@ export class TraccarService {
           const parts: string[] = [];
           for (const [key, value] of Object.entries(params)) {
             if (Array.isArray(value)) {
-              value.forEach((v) => parts.push(`${key}=${encodeURIComponent(v)}`));
+              value.forEach((v) =>
+                parts.push(`${key}=${encodeURIComponent(String(v))}`),
+              );
             } else if (value !== undefined && value !== null) {
-              parts.push(`${key}=${encodeURIComponent(value)}`);
+              parts.push(`${key}=${encodeURIComponent(String(value))}`);
             }
           }
           return parts.join('&');
         },
       };
 
+      this.logger.debug(
+        `Fetching positions from ${this.baseUrl}/api/positions with params: ${JSON.stringify(queryParams)}`,
+      );
+
       const response$ = this.httpService.get<TraccarPosition[]>(
         '/api/positions',
         config,
       );
       const response = await firstValueFrom(response$);
-      return response.data ?? [];
+      const positions = response.data ?? [];
+
+      this.logger.log(
+        `Successfully fetched ${positions.length} position(s) from Traccar${params.deviceId ? ` for deviceId=${params.deviceId}` : ''}`,
+      );
+
+      if (positions.length === 0 && params.deviceId !== undefined) {
+        this.logger.warn(
+          `No positions found for deviceId=${params.deviceId}. Device may be offline, have no recent positions, or lack access permissions.`,
+        );
+      }
+
+      return positions;
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          const status = error.response.status ?? HttpStatus.BAD_GATEWAY;
+          const rawPayload: unknown = error.response.data;
+          let payload: string | Record<string, unknown>;
+          if (rawPayload === undefined || rawPayload === null) {
+            payload = 'Traccar request failed';
+          } else if (typeof rawPayload === 'string') {
+            payload = rawPayload;
+          } else if (
+            typeof rawPayload === 'object' &&
+            !Array.isArray(rawPayload) &&
+            rawPayload !== null
+          ) {
+            payload = rawPayload as Record<string, unknown>;
+          } else {
+            payload = JSON.stringify(rawPayload);
+          }
+
+          if (
+            typeof payload === 'string' &&
+            payload.includes('Device access denied')
+          ) {
+            this.logger.warn(
+              'Traccar access denied – hãy kiểm tra quyền device trên Traccar',
+            );
+          } else {
+            this.logger.error(
+              `Failed to fetch positions: ${status} ${error.response.statusText}`,
+            );
+          }
+
+          throw new HttpException(payload, status);
+        }
+
+        this.logger.error(
+          'Failed to fetch positions: No response from Traccar',
+        );
+        throw new HttpException(
+          'No response from Traccar server',
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
       this.logger.error('Failed to fetch positions from Traccar', error);
-      throw error instanceof Error ? error : new Error(String(error));
+      throw new HttpException(
+        'Failed to fetch positions from Traccar',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -244,6 +323,61 @@ export class TraccarService {
       } else {
         this.logger.error('Failed to create device in Traccar', error);
       }
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  /**
+   * Get the latest position for a specific device.
+   * This is a convenience method that fetches positions and returns the most recent one.
+   */
+  async getLatestPosition(deviceId: number): Promise<TraccarPosition | null> {
+    try {
+      this.logger.debug(`Fetching latest position for deviceId=${deviceId}`);
+
+      // Get positions from last 24 hours to ensure we get recent data
+      const now = new Date();
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      const positions = await this.getPositions({
+        deviceId,
+        from: oneDayAgo.toISOString(),
+        to: now.toISOString(),
+      });
+
+      if (positions.length === 0) {
+        this.logger.warn(
+          `No positions found for deviceId=${deviceId} in the last 24 hours`,
+        );
+        return null;
+      }
+
+      // Sort by serverTime, fixTime, or deviceTime (most recent first)
+      const sorted = positions.sort((a, b) => {
+        const timeA =
+          (a.serverTime && new Date(a.serverTime).getTime()) ||
+          (a.fixTime && new Date(a.fixTime).getTime()) ||
+          (a.deviceTime && new Date(a.deviceTime).getTime()) ||
+          0;
+        const timeB =
+          (b.serverTime && new Date(b.serverTime).getTime()) ||
+          (b.fixTime && new Date(b.fixTime).getTime()) ||
+          (b.deviceTime && new Date(b.deviceTime).getTime()) ||
+          0;
+        return timeB - timeA; // Descending order (newest first)
+      });
+
+      const latest = sorted[0];
+      this.logger.log(
+        `Found latest position for deviceId=${deviceId}: lat=${latest.latitude}, lng=${latest.longitude}, time=${latest.serverTime || latest.fixTime || latest.deviceTime}`,
+      );
+
+      return latest;
+    } catch (error) {
+      this.logger.error(
+        `Failed to get latest position for deviceId=${deviceId}`,
+        error,
+      );
       throw error instanceof Error ? error : new Error(String(error));
     }
   }

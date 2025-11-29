@@ -22,11 +22,23 @@
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@app/common": ["src/common"],
-      "@app/core": ["src/core"],
-      "@app/modules/*": ["src/modules/*"]
+      "@app/common": [
+        "src/common"
+      ],
+      "@app/core": [
+        "src/core"
+      ],
+      "@app/modules/*": [
+        "src/modules/*"
+      ]
       // "@generated/*": ["generated/*"]
     }
   },
-  "include": ["src/**/*", "test/**/*", "generated/**/*", "prisma/**/*"]
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "generated/**/*",
+    "prisma/**/*",
+    "scripts/**/*"
+  ]
 }
