@@ -56,6 +56,7 @@ describe('TraccarWebSocketService - Realtime Integration', () => {
             },
             locationEvent: {
               create: jest.fn(),
+              findFirst: jest.fn(),
             },
             integrationState: {
               upsert: jest.fn(),
@@ -267,6 +268,208 @@ describe('TraccarWebSocketService - Realtime Integration', () => {
       // Assert
       expect(prismaService.locationEvent.create).not.toHaveBeenCalled();
       expect(locationEventGateway.emitLocationUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleWebSocketMessage - Duplicate position detection', () => {
+    it('should NOT save duplicate position (same coordinates)', async () => {
+      // Arrange
+      const lastLocationEvent = {
+        latitude: 10.123456,
+        longitude: 106.654321,
+      };
+
+      (prismaService.bus.findFirst as jest.Mock).mockResolvedValue(mockBus);
+      (prismaService.locationEvent.findFirst as jest.Mock).mockResolvedValue(
+        lastLocationEvent,
+      );
+
+      // Position với cùng tọa độ
+      const duplicatePosition = {
+        ...mockPosition,
+        latitude: 10.123456,
+        longitude: 106.654321,
+        serverTime: '2024-01-01T00:00:10Z', // 10 giây sau
+      };
+
+      const messageData = JSON.stringify({
+        positions: [duplicatePosition],
+      });
+
+      // Act
+      await (service as any).handleWebSocketMessage(Buffer.from(messageData));
+
+      // Assert
+      expect(prismaService.locationEvent.findFirst).toHaveBeenCalledWith({
+        where: { busId: mockBus.id },
+        orderBy: { timestamp: 'desc' },
+        select: {
+          latitude: true,
+          longitude: true,
+        },
+      });
+      // Không được tạo LocationEvent mới
+      expect(prismaService.locationEvent.create).not.toHaveBeenCalled();
+      // Không được update Bus
+      expect(prismaService.bus.update).not.toHaveBeenCalled();
+      // Không được emit
+      expect(locationEventGateway.emitLocationUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should save position when coordinates are different', async () => {
+      // Arrange
+      const lastLocationEvent = {
+        latitude: 10.123456,
+        longitude: 106.654321,
+      };
+
+      (prismaService.bus.findFirst as jest.Mock).mockResolvedValue(mockBus);
+      (prismaService.locationEvent.findFirst as jest.Mock).mockResolvedValue(
+        lastLocationEvent,
+      );
+      (prismaService.locationEvent.create as jest.Mock).mockResolvedValue({
+        id: 2,
+        busId: mockBus.id,
+        timestamp: new Date('2024-01-01T00:00:10Z'),
+        latitude: 10.123999, // Khác tọa độ
+        longitude: 106.654999, // Khác tọa độ
+      });
+      (prismaService.bus.update as jest.Mock).mockResolvedValue(mockBus);
+      (locationThrottleService.shouldEmit as jest.Mock).mockReturnValue(true);
+
+      // Position với tọa độ khác
+      const newPosition = {
+        ...mockPosition,
+        latitude: 10.123999,
+        longitude: 106.654999,
+        serverTime: '2024-01-01T00:00:10Z',
+      };
+
+      const messageData = JSON.stringify({
+        positions: [newPosition],
+      });
+
+      // Act
+      await (service as any).handleWebSocketMessage(Buffer.from(messageData));
+
+      // Assert
+      expect(prismaService.locationEvent.findFirst).toHaveBeenCalled();
+      // Phải tạo LocationEvent mới
+      expect(prismaService.locationEvent.create).toHaveBeenCalledWith({
+        data: {
+          busId: mockBus.id,
+          timestamp: expect.any(Date),
+          latitude: newPosition.latitude,
+          longitude: newPosition.longitude,
+          speedKph: newPosition.speed * 1.852,
+          heading: newPosition.course,
+          source: LocationSource.gateway,
+        },
+      });
+      // Phải update Bus
+      expect(prismaService.bus.update).toHaveBeenCalled();
+    });
+
+    it('should save position when bus has no previous LocationEvent', async () => {
+      // Arrange - Bus mới chưa có LocationEvent nào
+      (prismaService.bus.findFirst as jest.Mock).mockResolvedValue(mockBus);
+      (prismaService.locationEvent.findFirst as jest.Mock).mockResolvedValue(
+        null, // Không có LocationEvent trước đó
+      );
+      (prismaService.locationEvent.create as jest.Mock).mockResolvedValue({
+        id: 1,
+        busId: mockBus.id,
+        timestamp: new Date(mockPosition.serverTime),
+      });
+      (prismaService.bus.update as jest.Mock).mockResolvedValue(mockBus);
+      (locationThrottleService.shouldEmit as jest.Mock).mockReturnValue(true);
+
+      const messageData = JSON.stringify({
+        positions: [mockPosition],
+      });
+
+      // Act
+      await (service as any).handleWebSocketMessage(Buffer.from(messageData));
+
+      // Assert
+      expect(prismaService.locationEvent.findFirst).toHaveBeenCalled();
+      // Phải tạo LocationEvent mới (vì không có LocationEvent trước đó)
+      expect(prismaService.locationEvent.create).toHaveBeenCalled();
+      expect(prismaService.bus.update).toHaveBeenCalled();
+    });
+
+    it('should save position when latitude is different but longitude same', async () => {
+      // Arrange
+      const lastLocationEvent = {
+        latitude: 10.123456,
+        longitude: 106.654321,
+      };
+
+      (prismaService.bus.findFirst as jest.Mock).mockResolvedValue(mockBus);
+      (prismaService.locationEvent.findFirst as jest.Mock).mockResolvedValue(
+        lastLocationEvent,
+      );
+      (prismaService.locationEvent.create as jest.Mock).mockResolvedValue({
+        id: 2,
+        busId: mockBus.id,
+      });
+      (prismaService.bus.update as jest.Mock).mockResolvedValue(mockBus);
+      (locationThrottleService.shouldEmit as jest.Mock).mockReturnValue(true);
+
+      // Position với latitude khác
+      const newPosition = {
+        ...mockPosition,
+        latitude: 10.123999, // Khác latitude
+        longitude: 106.654321, // Giống longitude
+      };
+
+      const messageData = JSON.stringify({
+        positions: [newPosition],
+      });
+
+      // Act
+      await (service as any).handleWebSocketMessage(Buffer.from(messageData));
+
+      // Assert
+      // Phải tạo LocationEvent mới vì latitude khác
+      expect(prismaService.locationEvent.create).toHaveBeenCalled();
+    });
+
+    it('should save position when longitude is different but latitude same', async () => {
+      // Arrange
+      const lastLocationEvent = {
+        latitude: 10.123456,
+        longitude: 106.654321,
+      };
+
+      (prismaService.bus.findFirst as jest.Mock).mockResolvedValue(mockBus);
+      (prismaService.locationEvent.findFirst as jest.Mock).mockResolvedValue(
+        lastLocationEvent,
+      );
+      (prismaService.locationEvent.create as jest.Mock).mockResolvedValue({
+        id: 2,
+        busId: mockBus.id,
+      });
+      (prismaService.bus.update as jest.Mock).mockResolvedValue(mockBus);
+      (locationThrottleService.shouldEmit as jest.Mock).mockReturnValue(true);
+
+      // Position với longitude khác
+      const newPosition = {
+        ...mockPosition,
+        latitude: 10.123456, // Giống latitude
+        longitude: 106.654999, // Khác longitude
+      };
+
+      const messageData = JSON.stringify({
+        positions: [newPosition],
+      });
+
+      // Act
+      await (service as any).handleWebSocketMessage(Buffer.from(messageData));
+
+      // Assert
+      // Phải tạo LocationEvent mới vì longitude khác
+      expect(prismaService.locationEvent.create).toHaveBeenCalled();
     });
   });
 });

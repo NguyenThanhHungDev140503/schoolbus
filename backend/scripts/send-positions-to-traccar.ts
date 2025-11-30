@@ -375,6 +375,10 @@ async function sendBusPosition(
     console.log(
       `[${new Date().toISOString()}] Sending position for bus ${bus.licensePlate} (Unique ID: ${uniqueId})`,
     );
+    console.log(
+      `   Coordinates: lat=${simulatedPosition.latitude.toFixed(6)}, lon=${simulatedPosition.longitude.toFixed(6)}`,
+    );
+    console.log(`   URL: ${url}`);
 
     const response = await axios.get(url, {
       timeout: 10000, // 10 seconds timeout

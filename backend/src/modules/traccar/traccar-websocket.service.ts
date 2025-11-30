@@ -401,6 +401,29 @@ export class TraccarWebSocketService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Get the last LocationEvent for a bus to check for duplicate positions.
+   */
+  private async getLastLocationEvent(
+    busId: number,
+  ): Promise<{ latitude: number; longitude: number } | null> {
+    const lastEvent = await this.prisma.locationEvent.findFirst({
+      where: { busId },
+      orderBy: { timestamp: 'desc' },
+      select: {
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    if (!lastEvent) return null;
+
+    return {
+      latitude: Number(lastEvent.latitude),
+      longitude: Number(lastEvent.longitude),
+    };
+  }
+
+  /**
    * Handle incoming WebSocket message with positions.
    */
   private async handleWebSocketMessage(data: RawData): Promise<void> {
@@ -465,6 +488,20 @@ export class TraccarWebSocketService implements OnModuleInit, OnModuleDestroy {
       }
 
       this.lastBusTimestamps.set(bus.id, timestamp.getTime());
+
+      // Check for duplicate position (same coordinates)
+      const lastLocation = await this.getLastLocationEvent(bus.id);
+      if (
+        lastLocation &&
+        lastLocation.latitude === position.latitude &&
+        lastLocation.longitude === position.longitude
+      ) {
+        this.logger.debug(
+          `Skipping duplicate position for busId=${bus.id} (same coordinates: lat=${position.latitude}, lng=${position.longitude})`,
+        );
+        // lastBusTimestamps already updated above, so this prevents spam if multiple duplicates arrive
+        continue;
+      }
 
       // Convert speed from knots to km/h (same logic as cron sync)
       const speedKph =
